@@ -1,0 +1,26 @@
+### IntelliJ IDEA ###
+.idea/
+*.iml
+out/
+gen/
+
+### Compiled Java classes ###
+*.class
+
+### Build tool directories ###
+target/
+build/
+
+### Mac OS ###
+.DS_Store
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+bin/
+
+### VS Code ###
+.vscode/
