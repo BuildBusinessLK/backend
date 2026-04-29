@@ -16,6 +16,12 @@ public class Message {
     
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Column(nullable = false)
+    private String role;
+
+    @Column(name = "conversation_id", nullable = false)
+    private String conversationId;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -28,9 +34,11 @@ public class Message {
     public Message() {
     }
     
-    public Message(Long id, String content, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Message(Long id, String content, String role, String conversationId, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.content = content;
+        this.role = role;
+        this.conversationId = conversationId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -49,6 +57,22 @@ public class Message {
     
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
     }
     
     public LocalDateTime getCreatedAt() {

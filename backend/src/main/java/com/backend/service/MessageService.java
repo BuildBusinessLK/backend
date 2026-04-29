@@ -28,6 +28,8 @@ public class MessageService {
         
         Message message = new Message();
         message.setContent(request.getContent());
+        message.setRole("user");
+        message.setConversationId("manual");
         
         Message savedMessage = messageRepository.save(message);
         log.info("Message saved successfully with id: {}", savedMessage.getId());
@@ -61,6 +63,8 @@ public class MessageService {
         MessageResponse response = new MessageResponse();
         response.setId(message.getId());
         response.setContent(message.getContent());
+        response.setRole(message.getRole());
+        response.setConversationId(message.getConversationId());
         response.setCreatedAt(message.getCreatedAt());
         response.setUpdatedAt(message.getUpdatedAt());
         return response;
