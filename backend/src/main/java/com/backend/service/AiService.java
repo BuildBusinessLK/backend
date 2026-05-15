@@ -4,11 +4,15 @@ import com.backend.dto.AiRequest;
 import com.backend.dto.AiResponse;
 import com.backend.dto.AiApiResponse;
 import com.backend.entity.Message;
+import com.backend.entity.User;
 import com.backend.repository.MessageRepository;
+import com.backend.repository.UserRepository;
+import com.backend.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.security.core.Authentication;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,17 +26,19 @@ public class AiService {
 
     private final RestTemplate restTemplate;
     private final MessageRepository messageRepository;
+    private final UserRepository userRepository;
 
     @Value("${ai.service.url:http://localhost:8000/ask}")
     private String aiServiceUrl;
 
-    public AiService(RestTemplate restTemplate, MessageRepository messageRepository) {
+    public AiService(RestTemplate restTemplate, MessageRepository messageRepository, UserRepository userRepository) {
         this.restTemplate = restTemplate;
         this.messageRepository = messageRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
-    public AiApiResponse askAi(AiRequest request) {
+    public AiApiResponse askAi(AiRequest request, Authentication authentication) {
         String question = request.getQuestion();
         if (question == null || question.trim().isEmpty()) {
             return new AiApiResponse(false, null, "Question cannot be empty", null, 400);
@@ -51,6 +57,7 @@ public class AiService {
             aiRequest.put("question", question);
             aiRequest.put("conversation_id", conversationId);
             aiRequest.put("chat_history", chatHistory);
+            aiRequest.put("user_context", buildUserContext(authentication));
 
             AiResponse response = restTemplate.postForObject(aiServiceUrl, aiRequest, AiResponse.class);
             if (response != null && response.getAnswer() != null) {
@@ -63,6 +70,18 @@ public class AiService {
         } catch (Exception e) {
             return new AiApiResponse(false, null, "Error connecting to AI service: " + e.getMessage(), conversationId, 503);
         }
+    }
+
+    private String buildUserContext(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "";
+        }
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof CustomUserDetails ud)) {
+            return "";
+        }
+        User user = userRepository.findById(ud.getId()).orElse(null);
+        return AuthUserService.buildUserContextForAi(user);
     }
 
     private void saveChatMessage(String conversationId, String role, String content) {

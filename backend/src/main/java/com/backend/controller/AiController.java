@@ -6,7 +6,7 @@ import com.backend.service.AiService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/ask")
@@ -20,8 +20,8 @@ public class AiController {
     }
 
     @PostMapping
-    public ResponseEntity<AiApiResponse> askAI(@RequestBody AiRequest request) {
-        AiApiResponse response = aiService.askAi(request);
+    public ResponseEntity<AiApiResponse> askAI(@RequestBody AiRequest request, Authentication authentication) {
+        AiApiResponse response = aiService.askAi(request, authentication);
         
         if (response.isSuccess()) {
             return ResponseEntity.ok(response);

@@ -30,6 +30,10 @@ public class SmeHostedSite {
     @Column(name = "html_snapshot", columnDefinition = "LONGTEXT")
     private String htmlSnapshot;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    private User owner;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -92,6 +96,14 @@ public class SmeHostedSite {
 
     public void setHtmlSnapshot(String htmlSnapshot) {
         this.htmlSnapshot = htmlSnapshot;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 
     public LocalDateTime getCreatedAt() {

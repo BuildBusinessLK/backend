@@ -4,6 +4,7 @@ import com.backend.dto.SmePublishRequest;
 import com.backend.dto.SmePublishResponse;
 import com.backend.dto.SmePublicSiteResponse;
 import com.backend.entity.SmeHostedSite;
+import com.backend.entity.User;
 import com.backend.repository.SmeHostedSiteRepository;
 import com.backend.util.SmeSlugUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,7 +27,7 @@ public class SmeHostedSiteService {
     }
 
     @Transactional
-    public SmePublishResponse publish(SmePublishRequest request) throws JsonProcessingException {
+    public SmePublishResponse publish(SmePublishRequest request, User owner) throws JsonProcessingException {
         if (request == null) {
             throw new IllegalArgumentException("Request body is required.");
         }
@@ -57,11 +58,21 @@ public class SmeHostedSiteService {
         SmeHostedSite site = existing.orElseGet(SmeHostedSite::new);
         boolean updated = existing.isPresent();
 
+        if (existing.isPresent()) {
+            User prevOwner = site.getOwner();
+            if (owner != null && prevOwner != null && !prevOwner.getId().equals(owner.getId())) {
+                throw new IllegalArgumentException("This URL is already used by another account.");
+            }
+        }
+
         site.setSlug(slug);
         site.setBusinessName(business);
         site.setTemplateKey(request.getTemplateKey());
         site.setManifestJson(manifestJson);
         site.setHtmlSnapshot(html);
+        if (owner != null) {
+            site.setOwner(owner);
+        }
 
         repository.save(site);
 
