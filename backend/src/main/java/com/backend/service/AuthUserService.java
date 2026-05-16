@@ -2,14 +2,17 @@ package com.backend.service;
 
 import com.backend.dto.auth.AuthResponse;
 import com.backend.dto.auth.LoginRequest;
+import com.backend.dto.auth.ProfileUpdateRequest;
 import com.backend.dto.auth.RegisterRequest;
 import com.backend.dto.auth.UserProfileDto;
-import com.backend.dto.auth.ProfileUpdateRequest;
 import com.backend.entity.User;
+import com.backend.entity.UserProfile;
+import com.backend.repository.UserProfileRepository;
 import com.backend.repository.UserRepository;
 import com.backend.security.CustomUserDetails;
 import com.backend.security.JwtService;
 import com.backend.user.UserRole;
+import com.backend.user.UserStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,16 +25,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthUserService {
 
     private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
     public AuthUserService(
             UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
@@ -47,9 +53,14 @@ public class AuthUserService {
         User user = new User();
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setFullName(request.getFullName().trim());
         user.setRole(UserRole.USER);
+        user.setStatus(UserStatus.ACTIVE);
         user = userRepository.save(user);
+
+        UserProfile profile = new UserProfile();
+        profile.setUser(user);
+        profile.setFullName(request.getFullName().trim());
+        userProfileRepository.save(profile);
 
         String token = jwtService.generateToken(user);
         AuthResponse res = new AuthResponse();
@@ -62,8 +73,8 @@ public class AuthUserService {
     public AuthResponse login(LoginRequest request) {
         String email = request.getEmail().trim().toLowerCase();
         try {
-            Authentication auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, request.getPassword()));
+            Authentication auth =
+                    authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.getPassword()));
             CustomUserDetails details = (CustomUserDetails) auth.getPrincipal();
             User user = userRepository.findById(details.getId()).orElseThrow();
             String token = jwtService.generateToken(user);
@@ -85,66 +96,46 @@ public class AuthUserService {
     @Transactional
     public UserProfileDto updateProfile(Long userId, ProfileUpdateRequest req) {
         User user = userRepository.findById(userId).orElseThrow();
+        UserProfile profile = userProfileRepository.findByUser_Id(userId).orElseGet(() -> {
+            UserProfile p = new UserProfile();
+            p.setUser(user);
+            p.setFullName("");
+            return p;
+        });
         if (req.getFullName() != null) {
             String n = req.getFullName().trim();
             if (!n.isEmpty()) {
-                user.setFullName(n);
+                profile.setFullName(n);
             }
         }
         if (req.getPhone() != null) {
-            user.setPhone(trimToNull(req.getPhone()));
+            profile.setPhone(trimToNull(req.getPhone()));
         }
-        if (req.getBusinessName() != null) {
-            user.setBusinessName(trimToNull(req.getBusinessName()));
+        if (req.getExperienceLevel() != null) {
+            profile.setExperienceLevel(trimToNull(req.getExperienceLevel()));
         }
-        if (req.getIndustry() != null) {
-            user.setIndustry(trimToNull(req.getIndustry()));
+        if (req.getPreferredLanguage() != null) {
+            profile.setPreferredLanguage(trimToNull(req.getPreferredLanguage()));
         }
-        if (req.getDistrict() != null) {
-            user.setDistrict(trimToNull(req.getDistrict()));
-        }
-        if (req.getAiNotes() != null) {
-            user.setAiNotes(trimToNull(req.getAiNotes()));
-        }
-        user = userRepository.save(user);
+        userProfileRepository.save(profile);
         return toDto(user);
     }
 
-    public static UserProfileDto toDto(User user) {
+    public UserProfileDto toDto(User user) {
+        UserProfile profile = userProfileRepository.findByUser_Id(user.getId()).orElse(null);
         UserProfileDto dto = new UserProfileDto();
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
-        dto.setFullName(user.getFullName());
         dto.setRole(user.getRole());
-        dto.setPhone(user.getPhone());
-        dto.setBusinessName(user.getBusinessName());
-        dto.setIndustry(user.getIndustry());
-        dto.setDistrict(user.getDistrict());
-        dto.setAiNotes(user.getAiNotes());
+        dto.setStatus(user.getStatus());
+        if (profile != null) {
+            dto.setFullName(profile.getFullName());
+            dto.setPhone(profile.getPhone());
+            dto.setDistrict(profile.getDistrict());
+            dto.setExperienceLevel(profile.getExperienceLevel());
+            dto.setPreferredLanguage(profile.getPreferredLanguage());
+        }
         return dto;
-    }
-
-    public static String buildUserContextForAi(User user) {
-        if (user == null) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("Name: ").append(user.getFullName()).append('\n');
-        sb.append("Email: ").append(user.getEmail()).append('\n');
-        appendLine(sb, "Phone", user.getPhone());
-        appendLine(sb, "Business", user.getBusinessName());
-        appendLine(sb, "Industry focus", user.getIndustry());
-        appendLine(sb, "District", user.getDistrict());
-        if (user.getAiNotes() != null && !user.getAiNotes().isBlank()) {
-            sb.append("Owner notes / goals:\n").append(user.getAiNotes().trim()).append('\n');
-        }
-        return sb.toString().trim();
-    }
-
-    private static void appendLine(StringBuilder sb, String label, String value) {
-        if (value != null && !value.isBlank()) {
-            sb.append(label).append(": ").append(value.trim()).append('\n');
-        }
     }
 
     private static String trimToNull(String s) {

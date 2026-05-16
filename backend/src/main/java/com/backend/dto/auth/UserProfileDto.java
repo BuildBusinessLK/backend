@@ -1,6 +1,7 @@
 package com.backend.dto.auth;
 
 import com.backend.user.UserRole;
+import com.backend.user.UserStatus;
 
 public class UserProfileDto {
 
@@ -8,11 +9,11 @@ public class UserProfileDto {
     private String email;
     private String fullName;
     private UserRole role;
+    private UserStatus status;
     private String phone;
-    private String businessName;
-    private String industry;
     private String district;
-    private String aiNotes;
+    private String experienceLevel;
+    private String preferredLanguage;
 
     public Long getId() {
         return id;
@@ -46,28 +47,20 @@ public class UserProfileDto {
         this.role = role;
     }
 
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(UserStatus status) {
+        this.status = status;
+    }
+
     public String getPhone() {
         return phone;
     }
 
     public void setPhone(String phone) {
         this.phone = phone;
-    }
-
-    public String getBusinessName() {
-        return businessName;
-    }
-
-    public void setBusinessName(String businessName) {
-        this.businessName = businessName;
-    }
-
-    public String getIndustry() {
-        return industry;
-    }
-
-    public void setIndustry(String industry) {
-        this.industry = industry;
     }
 
     public String getDistrict() {
@@ -78,11 +71,19 @@ public class UserProfileDto {
         this.district = district;
     }
 
-    public String getAiNotes() {
-        return aiNotes;
+    public String getExperienceLevel() {
+        return experienceLevel;
     }
 
-    public void setAiNotes(String aiNotes) {
-        this.aiNotes = aiNotes;
+    public void setExperienceLevel(String experienceLevel) {
+        this.experienceLevel = experienceLevel;
+    }
+
+    public String getPreferredLanguage() {
+        return preferredLanguage;
+    }
+
+    public void setPreferredLanguage(String preferredLanguage) {
+        this.preferredLanguage = preferredLanguage;
     }
 }

@@ -3,11 +3,13 @@ package com.backend.controller;
 import com.backend.dto.auth.AuthResponse;
 import com.backend.dto.auth.LoginRequest;
 import com.backend.dto.auth.RegisterRequest;
-import jakarta.validation.Valid;
+import com.backend.dto.auth.UserProfileDto;
+import com.backend.security.CustomUserDetails;
 import com.backend.service.AuthUserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -21,6 +23,11 @@ public class AuthController {
 
     public AuthController(AuthUserService authUserService) {
         this.authUserService = authUserService;
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileDto> me(@AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(authUserService.getProfile(principal.getId()));
     }
 
     @PostMapping("/register")
@@ -37,7 +44,7 @@ public class AuthController {
         try {
             AuthResponse body = authUserService.login(request);
             return ResponseEntity.ok(body);
-        } catch (BadCredentialsException ex) {
+        } catch (org.springframework.security.authentication.BadCredentialsException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", ex.getMessage()));
         }
     }

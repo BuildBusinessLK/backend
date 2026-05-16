@@ -1,6 +1,7 @@
 package com.backend.entity;
 
 import com.backend.user.UserRole;
+import com.backend.user.UserStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -23,24 +24,9 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role = UserRole.USER;
 
-    @Column(name = "full_name", nullable = false, length = 200)
-    private String fullName;
-
-    @Column(length = 40)
-    private String phone;
-
-    @Column(name = "business_name", length = 255)
-    private String businessName;
-
-    @Column(length = 80)
-    private String industry;
-
-    @Column(length = 120)
-    private String district;
-
-    @Lob
-    @Column(name = "ai_notes", columnDefinition = "TEXT")
-    private String aiNotes;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -64,6 +50,10 @@ public class User {
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getEmail() {
@@ -90,52 +80,12 @@ public class User {
         this.role = role;
     }
 
-    public String getFullName() {
-        return fullName;
+    public UserStatus getStatus() {
+        return status;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getBusinessName() {
-        return businessName;
-    }
-
-    public void setBusinessName(String businessName) {
-        this.businessName = businessName;
-    }
-
-    public String getIndustry() {
-        return industry;
-    }
-
-    public void setIndustry(String industry) {
-        this.industry = industry;
-    }
-
-    public String getDistrict() {
-        return district;
-    }
-
-    public void setDistrict(String district) {
-        this.district = district;
-    }
-
-    public String getAiNotes() {
-        return aiNotes;
-    }
-
-    public void setAiNotes(String aiNotes) {
-        this.aiNotes = aiNotes;
+    public void setStatus(UserStatus status) {
+        this.status = status;
     }
 
     public LocalDateTime getCreatedAt() {

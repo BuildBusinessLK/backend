@@ -5,10 +5,9 @@ public class ProfileUpdateRequest {
 
     private String fullName;
     private String phone;
-    private String businessName;
-    private String industry;
     private String district;
-    private String aiNotes;
+    private String experienceLevel;
+    private String preferredLanguage;
 
     public String getFullName() {
         return fullName;
@@ -26,22 +25,6 @@ public class ProfileUpdateRequest {
         this.phone = phone;
     }
 
-    public String getBusinessName() {
-        return businessName;
-    }
-
-    public void setBusinessName(String businessName) {
-        this.businessName = businessName;
-    }
-
-    public String getIndustry() {
-        return industry;
-    }
-
-    public void setIndustry(String industry) {
-        this.industry = industry;
-    }
-
     public String getDistrict() {
         return district;
     }
@@ -50,11 +33,19 @@ public class ProfileUpdateRequest {
         this.district = district;
     }
 
-    public String getAiNotes() {
-        return aiNotes;
+    public String getExperienceLevel() {
+        return experienceLevel;
     }
 
-    public void setAiNotes(String aiNotes) {
-        this.aiNotes = aiNotes;
+    public void setExperienceLevel(String experienceLevel) {
+        this.experienceLevel = experienceLevel;
+    }
+
+    public String getPreferredLanguage() {
+        return preferredLanguage;
+    }
+
+    public void setPreferredLanguage(String preferredLanguage) {
+        this.preferredLanguage = preferredLanguage;
     }
 }
