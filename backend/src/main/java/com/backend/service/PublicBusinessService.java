@@ -1,5 +1,6 @@
 package com.backend.service;
 
+import com.backend.domain.WebsiteStatus;
 import com.backend.dto.business.BusinessProductDto;
 import com.backend.dto.business.BusinessSocialLinkDto;
 import com.backend.dto.publicapi.PublicBusinessResponse;
@@ -55,8 +56,13 @@ public class PublicBusinessService {
         dto.setProducts(mapProducts(businessProductRepository.findByBusiness_IdOrderByIdAsc(b.getId())));
         dto.setSocialLinks(mapSocial(businessSocialLinkRepository.findByBusiness_IdOrderByIdAsc(b.getId())));
 
-        generatedWebsiteRepository.findFirstByBusiness_IdOrderByUpdatedAtDesc(b.getId()).ifPresent(gw -> applyWebsite(dto, gw));
-        return Optional.of(dto);
+        return generatedWebsiteRepository
+                .findFirstByBusiness_IdOrderByUpdatedAtDesc(b.getId())
+                .filter(gw -> gw.getStatus() == WebsiteStatus.PUBLISHED)
+                .map(gw -> {
+                    applyWebsite(dto, gw);
+                    return dto;
+                });
     }
 
     private void applyWebsite(PublicBusinessResponse dto, GeneratedWebsite gw) {
