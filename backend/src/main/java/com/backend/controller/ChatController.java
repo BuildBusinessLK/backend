@@ -40,6 +40,13 @@ public class ChatController {
         return chatService.listMessages(principal.getId(), sessionId);
     }
 
+    @DeleteMapping("/sessions/{sessionId}")
+    public ResponseEntity<Void> deleteSession(
+            @AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long sessionId) {
+        chatService.deleteSession(principal.getId(), sessionId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/messages")
     public ResponseEntity<ChatSendResponse> send(
             @AuthenticationPrincipal CustomUserDetails principal, @Valid @RequestBody ChatSendRequest request) {
