@@ -32,6 +32,19 @@ public class BusinessProfile {
     @Column(name = "marketing_goals", columnDefinition = "TEXT")
     private String marketingGoals;
 
+    @Column(name = "business_hours_open", length = 20)
+    private String businessHoursOpen;
+
+    @Column(name = "business_hours_close", length = 20)
+    private String businessHoursClose;
+
+    @Column(name = "working_days", length = 255)
+    private String workingDays;
+
+    @Column(name = "google_maps_url", length = 500)
+    private String googleMapsUrl;
+
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -107,6 +120,39 @@ public class BusinessProfile {
     public void setMarketingGoals(String marketingGoals) {
         this.marketingGoals = marketingGoals;
     }
+
+    public String getBusinessHoursOpen() {
+        return businessHoursOpen;
+    }
+
+    public void setBusinessHoursOpen(String businessHoursOpen) {
+        this.businessHoursOpen = businessHoursOpen;
+    }
+
+    public String getBusinessHoursClose() {
+        return businessHoursClose;
+    }
+
+    public void setBusinessHoursClose(String businessHoursClose) {
+        this.businessHoursClose = businessHoursClose;
+    }
+
+    public String getWorkingDays() {
+        return workingDays;
+    }
+
+    public void setWorkingDays(String workingDays) {
+        this.workingDays = workingDays;
+    }
+
+    public String getGoogleMapsUrl() {
+        return googleMapsUrl;
+    }
+
+    public void setGoogleMapsUrl(String googleMapsUrl) {
+        this.googleMapsUrl = googleMapsUrl;
+    }
+
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

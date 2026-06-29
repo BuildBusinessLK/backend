@@ -52,6 +52,10 @@ public class PublicBusinessService {
         businessProfileRepository.findByBusiness_Id(b.getId()).ifPresent(bp -> {
             dto.setBusinessDescription(bp.getBusinessDescription());
             dto.setTargetMarket(bp.getTargetMarket());
+            dto.setBusinessHoursOpen(bp.getBusinessHoursOpen());
+            dto.setBusinessHoursClose(bp.getBusinessHoursClose());
+            dto.setWorkingDays(bp.getWorkingDays());
+            dto.setGoogleMapsUrl(bp.getGoogleMapsUrl());
         });
         dto.setProducts(mapProducts(businessProductRepository.findByBusiness_IdOrderByIdAsc(b.getId())));
         dto.setSocialLinks(mapSocial(businessSocialLinkRepository.findByBusiness_IdOrderByIdAsc(b.getId())));
