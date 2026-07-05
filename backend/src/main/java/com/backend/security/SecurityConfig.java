@@ -38,7 +38,16 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers("/api/auth/**", "/api/public/**")
+                                auth.requestMatchers(
+                                                "/api/auth/**",
+                                                "/api/public/**",
+                                                "/generate-email",
+                                                "/send-email",
+                                                "/generate",
+                                                "/generate-posts",
+                                                "/api/ads/generate",
+                                                "/api/ads/health",
+                                                "/ask/**")
                                         .permitAll()
                                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                                         .permitAll()

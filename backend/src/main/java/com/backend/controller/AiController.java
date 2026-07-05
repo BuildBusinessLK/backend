@@ -3,6 +3,8 @@ package com.backend.controller;
 import com.backend.dto.AiRequest;
 import com.backend.dto.ChatResponse;
 import com.backend.dto.ChatSessionRequest;
+import com.backend.dto.chat.ChatSendRequest;
+import com.backend.dto.chat.ChatSendResponse;
 import com.backend.service.ChatService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +31,7 @@ public class AiController {
      */
     @PostMapping("/session")
     public ResponseEntity<String> createSession() {
-        String id = chatService.createSession();
+        String id = String.valueOf(chatService.createSession());
         return ResponseEntity.ok(id);
     }
 
@@ -38,9 +40,11 @@ public class AiController {
      * If `sessionId` is omitted in the request, a new session is created.
      */
     @PostMapping("/session/message")
-    public ResponseEntity<ChatResponse> postMessage(@RequestBody ChatSessionRequest req) {
-        ChatResponse res = chatService.postMessage(req.getSessionId(), req.getMessage());
-        return ResponseEntity.ok(res);
+    public ResponseEntity<ChatSendResponse> postMessage(@RequestBody ChatSessionRequest req) {
+        ChatSendRequest request = new ChatSendRequest();
+        request.setSessionId(req.getSessionId() == null ? null : Long.parseLong(req.getSessionId()));
+        request.setQuestion(req.getMessage());
+        return ResponseEntity.ok(chatService.send(1L, request));
     }
 
     @GetMapping("/session/{id}")
