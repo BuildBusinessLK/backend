@@ -7,6 +7,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -35,12 +36,12 @@ public class EmailService {
     private final String openaiModel;
 
     public EmailService(
-            JavaMailSender mailSender,
+            ObjectProvider<JavaMailSender> mailSender,
             @Value("${spring.mail.host:}") String mailHost,
             @Value("${app.mail.from:}") String fromAddress,
             @Value("${app.openai.apiKey:}") String openaiApiKey,
             @Value("${app.openai.model:gpt-4o-mini}") String openaiModel) {
-        this.mailSender = mailSender;
+        this.mailSender = mailSender.getIfAvailable();
         this.mailHost = mailHost;
         this.fromAddress = fromAddress;
         this.openaiApiKey = openaiApiKey == null ? "" : openaiApiKey.trim();

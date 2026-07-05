@@ -15,6 +15,8 @@ public class AdsGenerationRequest {
     private String targetAudience;
     
     private String tone;
+    private String platform;
+private String website;
     
 
     public AdsGenerationRequest() {}

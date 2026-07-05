@@ -1,5 +1,7 @@
 package com.backend.service;
 
+import com.backend.dto.ai.AdGenerationRequest;
+import com.backend.dto.ai.AdGenerationResponse;
 import com.backend.dto.ai.AiChatRequest;
 import com.backend.dto.ai.AiChatResponse;
 import com.backend.dto.ai.WebsiteCopyRequest;
@@ -21,6 +23,9 @@ public class AiClientService {
 
     @Value("${ai.service.website-copy-url:http://localhost:8000/website-copy}")
     private String websiteCopyUrl;
+
+    @Value("${ai.service.ad-generation-url:http://localhost:8000/ad-generate}")
+    private String adGenerationUrl;
 
     public AiClientService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -44,6 +49,17 @@ public class AiClientService {
         WebsiteCopyResponse body = restTemplate.postForObject(websiteCopyUrl, entity, WebsiteCopyResponse.class);
         if (body == null) {
             throw new IllegalStateException("AI service returned empty website copy");
+        }
+        return body;
+    }
+
+    public AdGenerationResponse generateAdCopy(AdGenerationRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<AdGenerationRequest> entity = new HttpEntity<>(request, headers);
+        AdGenerationResponse body = restTemplate.postForObject(adGenerationUrl, entity, AdGenerationResponse.class);
+        if (body == null || body.getGeneratedAds() == null || body.getGeneratedAds().isBlank()) {
+            throw new IllegalStateException("AI service returned empty ad copy");
         }
         return body;
     }

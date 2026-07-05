@@ -238,4 +238,20 @@ public class ChatService {
         dto.setCreatedAt(m.getCreatedAt());
         return dto;
     }
+
+    public char[] createSession() {
+        return new char[0];
+    }
+
+    public List<String> getQuickReplies(String id) {
+        return List.of();
+    }
+
+    public List<com.backend.dto.ChatMessage> getConversation(String id) {
+        return List.of();
+    }
+
+    public String getBriefSummary(String id) {
+        return id;
+    }
 }
