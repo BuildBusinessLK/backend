@@ -16,8 +16,13 @@ public class BusinessDetailDto {
     private BigDecimal monthlyIncome;
     private BigDecimal monthlyProduction;
     private String marketingGoals;
+    private String businessHoursOpen;
+    private String businessHoursClose;
+    private String workingDays;
+    private String googleMapsUrl;
     private List<BusinessProductDto> products;
     private List<BusinessSocialLinkDto> socialLinks;
+
 
     public Long getId() {
         return id;
@@ -90,6 +95,39 @@ public class BusinessDetailDto {
     public void setMarketingGoals(String marketingGoals) {
         this.marketingGoals = marketingGoals;
     }
+
+    public String getBusinessHoursOpen() {
+        return businessHoursOpen;
+    }
+
+    public void setBusinessHoursOpen(String businessHoursOpen) {
+        this.businessHoursOpen = businessHoursOpen;
+    }
+
+    public String getBusinessHoursClose() {
+        return businessHoursClose;
+    }
+
+    public void setBusinessHoursClose(String businessHoursClose) {
+        this.businessHoursClose = businessHoursClose;
+    }
+
+    public String getWorkingDays() {
+        return workingDays;
+    }
+
+    public void setWorkingDays(String workingDays) {
+        this.workingDays = workingDays;
+    }
+
+    public String getGoogleMapsUrl() {
+        return googleMapsUrl;
+    }
+
+    public void setGoogleMapsUrl(String googleMapsUrl) {
+        this.googleMapsUrl = googleMapsUrl;
+    }
+
 
     public List<BusinessProductDto> getProducts() {
         return products;

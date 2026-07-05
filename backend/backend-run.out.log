@@ -1,0 +1,86 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< org.example:backend >-------------------------
+[INFO] Building backend 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.2.2:run (default-cli) > test-compile @ backend >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ backend ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ backend ---
+[INFO] skip non existing resourceDirectory C:\Users\Asus\Desktop\BUild Buisuness LK\backend\backend\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ backend ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] <<< spring-boot:3.2.2:run (default-cli) < test-compile @ backend <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.2.2:run (default-cli) @ backend ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.2)
+
+2026-06-16T17:00:54.712+05:30  INFO 11112 --- [  restartedMain] com.backend.BackendApplication           : Starting BackendApplication using Java 25.0.2 with PID 11112 (C:\Users\Asus\Desktop\BUild Buisuness LK\backend\backend\target\classes started by Asus in C:\Users\Asus\Desktop\BUild Buisuness LK\backend\backend)
+2026-06-16T17:00:54.713+05:30  INFO 11112 --- [  restartedMain] com.backend.BackendApplication           : The following 1 profile is active: "dev"
+2026-06-16T17:00:54.743+05:30  INFO 11112 --- [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-06-16T17:00:54.744+05:30  INFO 11112 --- [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-06-16T17:00:55.103+05:30  INFO 11112 --- [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-16T17:00:55.157+05:30  INFO 11112 --- [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 47 ms. Found 10 JPA repository interfaces.
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.apache.tomcat.jni.Library in an unnamed module (file:/C:/Users/Asus/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-06-16T17:00:55.516+05:30  INFO 11112 --- [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8083 (http)
+2026-06-16T17:00:55.527+05:30  INFO 11112 --- [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-16T17:00:55.527+05:30  INFO 11112 --- [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.18]
+2026-06-16T17:00:55.553+05:30  INFO 11112 --- [  restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-06-16T17:00:55.555+05:30  INFO 11112 --- [  restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 810 ms
+2026-06-16T17:00:55.637+05:30  INFO 11112 --- [  restartedMain] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-06-16T17:00:55.671+05:30  INFO 11112 --- [  restartedMain] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.1.Final
+2026-06-16T17:00:55.691+05:30  INFO 11112 --- [  restartedMain] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-06-16T17:00:55.812+05:30  INFO 11112 --- [  restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-16T17:00:55.831+05:30  INFO 11112 --- [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-16T17:00:55.924+05:30  INFO 11112 --- [  restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@654c4279
+2026-06-16T17:00:55.927+05:30  INFO 11112 --- [  restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-16T17:00:55.949+05:30  WARN 11112 --- [  restartedMain] org.hibernate.dialect.Dialect            : HHH000511: The 5.5.0 version for [org.hibernate.dialect.MySQLDialect] is no longer supported, hence certain features may not work properly. The minimum supported version is 8.0.0. Check the community dialects project for available legacy versions.
+2026-06-16T17:00:55.951+05:30  WARN 11112 --- [  restartedMain] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-06-16T17:00:56.514+05:30  INFO 11112 --- [  restartedMain] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-06-16T17:00:56.627+05:30  INFO 11112 --- [  restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-16T17:00:57.084+05:30  WARN 11112 --- [  restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-06-16T17:00:57.261+05:30  INFO 11112 --- [  restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@263fa831, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@6cd847b4, org.springframework.security.web.context.SecurityContextHolderFilter@16bf3fb5, org.springframework.security.web.header.HeaderWriterFilter@7c761d12, org.springframework.web.filter.CorsFilter@31b7d746, org.springframework.security.web.authentication.logout.LogoutFilter@b392873, com.backend.security.JwtAuthFilter@5414388f, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@26eb6027, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@2834fbbd, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@34203aeb, org.springframework.security.web.session.SessionManagementFilter@391c1af6, org.springframework.security.web.access.ExceptionTranslationFilter@7aac7868, org.springframework.security.web.access.intercept.AuthorizationFilter@3d4c0fd6]
+2026-06-16T17:00:57.407+05:30  INFO 11112 --- [  restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2026-06-16T17:00:57.428+05:30  INFO 11112 --- [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8083 (http) with context path ''
+2026-06-16T17:00:57.433+05:30  INFO 11112 --- [  restartedMain] com.backend.BackendApplication           : Started BackendApplication in 2.934 seconds (process running for 3.177)
+Hibernate: 
+    select
+        count(*) 
+    from
+        knowledge_sources ks1_0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  01:27 min
+[INFO] Finished at: 2026-06-16T17:02:20+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.2.2:run (default-cli) on project backend: Process terminated with exit code: -1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

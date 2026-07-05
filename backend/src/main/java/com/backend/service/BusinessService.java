@@ -115,7 +115,12 @@ public class BusinessService {
         bp.setMonthlyIncome(req.getMonthlyIncome());
         bp.setMonthlyProduction(req.getMonthlyProduction());
         bp.setMarketingGoals(trim(req.getMarketingGoals()));
+        bp.setBusinessHoursOpen(trim(req.getBusinessHoursOpen()));
+        bp.setBusinessHoursClose(trim(req.getBusinessHoursClose()));
+        bp.setWorkingDays(trim(req.getWorkingDays()));
+        bp.setGoogleMapsUrl(trim(req.getGoogleMapsUrl()));
     }
+
 
     private void replaceProducts(Business b, List<BusinessProductDto> items) {
         if (items == null) {
@@ -179,7 +184,12 @@ public class BusinessService {
             dto.setMonthlyIncome(bp.getMonthlyIncome());
             dto.setMonthlyProduction(bp.getMonthlyProduction());
             dto.setMarketingGoals(bp.getMarketingGoals());
+            dto.setBusinessHoursOpen(bp.getBusinessHoursOpen());
+            dto.setBusinessHoursClose(bp.getBusinessHoursClose());
+            dto.setWorkingDays(bp.getWorkingDays());
+            dto.setGoogleMapsUrl(bp.getGoogleMapsUrl());
         });
+
         List<BusinessProductDto> products = new ArrayList<>();
         for (BusinessProduct p : businessProductRepository.findByBusiness_IdOrderByIdAsc(b.getId())) {
             BusinessProductDto d = new BusinessProductDto();
