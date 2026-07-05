@@ -8,3 +8,8 @@
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
+# Default ignored files
+/shelf/
+/workspace.xml
+# Environment-dependent path to Maven home directory
+/mavenHomeManager.xml
