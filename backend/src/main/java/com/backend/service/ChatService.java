@@ -77,6 +77,13 @@ public class ChatService {
     }
 
     @Transactional
+    public void deleteSession(Long userId, Long sessionId) {
+        ChatSession session = chatSessionRepository.findByIdAndUser_Id(sessionId, userId).orElseThrow();
+        chatMessageRepository.deleteBySession_Id(session.getId());
+        chatSessionRepository.delete(session);
+    }
+
+    @Transactional
     public ChatSendResponse send(Long userId, ChatSendRequest request) {
         User user = userRepository.findById(userId).orElseThrow();
         ChatSession session;
