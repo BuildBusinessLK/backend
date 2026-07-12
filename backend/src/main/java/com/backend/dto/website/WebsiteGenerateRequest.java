@@ -18,6 +18,7 @@ public class WebsiteGenerateRequest {
     @Email
     private String contactEmail;
     private String phone;
+    private String intentMessage;
 
     public Long getBusinessId() {
         return businessId;
@@ -81,5 +82,13 @@ public class WebsiteGenerateRequest {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getIntentMessage() {
+        return intentMessage;
+    }
+
+    public void setIntentMessage(String intentMessage) {
+        this.intentMessage = intentMessage;
     }
 }

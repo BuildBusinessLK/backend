@@ -18,18 +18,21 @@ public class BusinessService {
     private final BusinessProductRepository businessProductRepository;
     private final BusinessSocialLinkRepository businessSocialLinkRepository;
     private final UserRepository userRepository;
+    private final ClickEventRepository clickEventRepository;
 
     public BusinessService(
             BusinessRepository businessRepository,
             BusinessProfileRepository businessProfileRepository,
             BusinessProductRepository businessProductRepository,
             BusinessSocialLinkRepository businessSocialLinkRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            ClickEventRepository clickEventRepository) {
         this.businessRepository = businessRepository;
         this.businessProfileRepository = businessProfileRepository;
         this.businessProductRepository = businessProductRepository;
         this.businessSocialLinkRepository = businessSocialLinkRepository;
         this.userRepository = userRepository;
+        this.clickEventRepository = clickEventRepository;
     }
 
     @Transactional(readOnly = true)
@@ -119,6 +122,7 @@ public class BusinessService {
         bp.setBusinessHoursClose(trim(req.getBusinessHoursClose()));
         bp.setWorkingDays(trim(req.getWorkingDays()));
         bp.setGoogleMapsUrl(trim(req.getGoogleMapsUrl()));
+        bp.setIntentMessage(trim(req.getIntentMessage()));
     }
 
 
@@ -188,6 +192,7 @@ public class BusinessService {
             dto.setBusinessHoursClose(bp.getBusinessHoursClose());
             dto.setWorkingDays(bp.getWorkingDays());
             dto.setGoogleMapsUrl(bp.getGoogleMapsUrl());
+            dto.setIntentMessage(bp.getIntentMessage());
         });
 
         List<BusinessProductDto> products = new ArrayList<>();
@@ -212,5 +217,32 @@ public class BusinessService {
         }
         dto.setSocialLinks(social);
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyAnalyticsDto> getAnalytics(Long userId, Long businessId) {
+        Business b = businessRepository.findByIdAndOwner_Id(businessId, userId).orElseThrow();
+        java.time.LocalDateTime since = java.time.LocalDateTime.now().minusDays(29).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        List<ClickEvent> events = clickEventRepository.findByBusiness_IdAndTimestampAfter(b.getId(), since);
+
+        java.util.Map<String, DailyAnalyticsDto> map = new java.util.LinkedHashMap<>();
+        for (int i = 29; i >= 0; i--) {
+            String dateStr = java.time.LocalDate.now().minusDays(i).toString();
+            map.put(dateStr, new DailyAnalyticsDto(dateStr, 0, 0));
+        }
+
+        for (ClickEvent e : events) {
+            String dateStr = e.getTimestamp().toLocalDate().toString();
+            DailyAnalyticsDto dto = map.get(dateStr);
+            if (dto != null) {
+                if ("whatsapp_click".equals(e.getEventType())) {
+                    dto.setWhatsappClicks(dto.getWhatsappClicks() + 1);
+                } else if ("directions_click".equals(e.getEventType())) {
+                    dto.setDirectionsClicks(dto.getDirectionsClicks() + 1);
+                }
+            }
+        }
+
+        return new ArrayList<>(map.values());
     }
 }

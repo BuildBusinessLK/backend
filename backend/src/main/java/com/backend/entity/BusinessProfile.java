@@ -44,6 +44,9 @@ public class BusinessProfile {
     @Column(name = "google_maps_url", length = 500)
     private String googleMapsUrl;
 
+    @Column(name = "intent_message", columnDefinition = "TEXT")
+    private String intentMessage;
+
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -151,6 +154,14 @@ public class BusinessProfile {
 
     public void setGoogleMapsUrl(String googleMapsUrl) {
         this.googleMapsUrl = googleMapsUrl;
+    }
+
+    public String getIntentMessage() {
+        return intentMessage;
+    }
+
+    public void setIntentMessage(String intentMessage) {
+        this.intentMessage = intentMessage;
     }
 
 

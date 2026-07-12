@@ -24,18 +24,21 @@ public class PublicBusinessService {
     private final BusinessProductRepository businessProductRepository;
     private final BusinessSocialLinkRepository businessSocialLinkRepository;
     private final GeneratedWebsiteRepository generatedWebsiteRepository;
+    private final ClickEventRepository clickEventRepository;
 
     public PublicBusinessService(
             BusinessRepository businessRepository,
             BusinessProfileRepository businessProfileRepository,
             BusinessProductRepository businessProductRepository,
             BusinessSocialLinkRepository businessSocialLinkRepository,
-            GeneratedWebsiteRepository generatedWebsiteRepository) {
+            GeneratedWebsiteRepository generatedWebsiteRepository,
+            ClickEventRepository clickEventRepository) {
         this.businessRepository = businessRepository;
         this.businessProfileRepository = businessProfileRepository;
         this.businessProductRepository = businessProductRepository;
         this.businessSocialLinkRepository = businessSocialLinkRepository;
         this.generatedWebsiteRepository = generatedWebsiteRepository;
+        this.clickEventRepository = clickEventRepository;
     }
 
     @Transactional(readOnly = true)
@@ -56,6 +59,7 @@ public class PublicBusinessService {
             dto.setBusinessHoursClose(bp.getBusinessHoursClose());
             dto.setWorkingDays(bp.getWorkingDays());
             dto.setGoogleMapsUrl(bp.getGoogleMapsUrl());
+            dto.setIntentMessage(bp.getIntentMessage());
         });
         dto.setProducts(mapProducts(businessProductRepository.findByBusiness_IdOrderByIdAsc(b.getId())));
         dto.setSocialLinks(mapSocial(businessSocialLinkRepository.findByBusiness_IdOrderByIdAsc(b.getId())));
@@ -112,5 +116,16 @@ public class PublicBusinessService {
             out.add(d);
         }
         return out;
+    }
+
+    @Transactional
+    public void recordClick(String slug, String eventType) {
+        Business b = businessRepository.findByWebsiteSlugIgnoreCase(slug)
+                .orElseThrow(() -> new IllegalArgumentException("Business not found with slug: " + slug));
+        com.backend.entity.ClickEvent event = new com.backend.entity.ClickEvent();
+        event.setBusiness(b);
+        event.setEventType(eventType);
+        event.setTimestamp(java.time.LocalDateTime.now());
+        clickEventRepository.save(event);
     }
 }

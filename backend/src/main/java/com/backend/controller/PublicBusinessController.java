@@ -26,4 +26,18 @@ public class PublicBusinessController {
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Not found")));
     }
+
+    @PostMapping("/{slug}/click")
+    public ResponseEntity<?> recordClick(@PathVariable String slug, @RequestBody Map<String, String> body) {
+        String eventType = body.get("eventType");
+        if (eventType == null || eventType.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "eventType is required"));
+        }
+        try {
+            publicBusinessService.recordClick(slug, eventType);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
 }

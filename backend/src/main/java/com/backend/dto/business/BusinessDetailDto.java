@@ -20,6 +20,7 @@ public class BusinessDetailDto {
     private String businessHoursClose;
     private String workingDays;
     private String googleMapsUrl;
+    private String intentMessage;
     private List<BusinessProductDto> products;
     private List<BusinessSocialLinkDto> socialLinks;
 
@@ -126,6 +127,14 @@ public class BusinessDetailDto {
 
     public void setGoogleMapsUrl(String googleMapsUrl) {
         this.googleMapsUrl = googleMapsUrl;
+    }
+
+    public String getIntentMessage() {
+        return intentMessage;
+    }
+
+    public void setIntentMessage(String intentMessage) {
+        this.intentMessage = intentMessage;
     }
 
 

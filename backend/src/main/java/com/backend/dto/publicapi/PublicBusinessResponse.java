@@ -31,6 +31,7 @@ public class PublicBusinessResponse {
     private String businessHoursClose;
     private String workingDays;
     private String googleMapsUrl;
+    private String intentMessage;
 
 
     public String getBusinessName() {
@@ -207,6 +208,14 @@ public class PublicBusinessResponse {
 
     public void setGoogleMapsUrl(String googleMapsUrl) {
         this.googleMapsUrl = googleMapsUrl;
+    }
+
+    public String getIntentMessage() {
+        return intentMessage;
+    }
+
+    public void setIntentMessage(String intentMessage) {
+        this.intentMessage = intentMessage;
     }
 
 }

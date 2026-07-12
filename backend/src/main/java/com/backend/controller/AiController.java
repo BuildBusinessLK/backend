@@ -1,9 +1,9 @@
 package com.backend.controller;
 
 import com.backend.dto.AiRequest;
-import com.backend.dto.ChatResponse;
-import com.backend.dto.ChatSessionRequest;
-import com.backend.service.ChatService;
+import com.backend.dto.ai.AiChatRequest;
+import com.backend.dto.ai.AiChatResponse;
+import com.backend.service.AiClientService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,46 +12,18 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")
 public class AiController {
 
-    private final ChatService chatService;
+    private final AiClientService aiClientService;
 
-    public AiController(ChatService chatService) {
-        this.chatService = chatService;
+    public AiController(AiClientService aiClientService) {
+        this.aiClientService = aiClientService;
     }
 
     @PostMapping
     public ResponseEntity<String> askAI(@RequestBody AiRequest request) {
-        String answer = "Processed: " + request.getQuestion();
-        return ResponseEntity.ok(answer);
-    }
+        AiChatRequest aiRequest = new AiChatRequest();
+        aiRequest.setQuestion(request.getQuestion());
 
-    /**
-     * Create a new chat session (returns sessionId)
-     */
-    @PostMapping("/session")
-    public ResponseEntity<String> createSession() {
-        String id = chatService.createSession();
-        return ResponseEntity.ok(id);
+        AiChatResponse response = aiClientService.chat(aiRequest);
+        return ResponseEntity.ok(response.getMessage());
     }
-
-    /**
-     * Post a message to a chat session and receive assistant reply.
-     * If `sessionId` is omitted in the request, a new session is created.
-     */
-    @PostMapping("/session/message")
-    public ResponseEntity<ChatResponse> postMessage(@RequestBody ChatSessionRequest req) {
-        ChatResponse res = chatService.postMessage(req.getSessionId(), req.getMessage());
-        return ResponseEntity.ok(res);
-    }
-
-    @GetMapping("/session/{id}")
-    public ResponseEntity<ChatResponse> getSession(@PathVariable("id") String id) {
-        ChatResponse res = new ChatResponse();
-        res.setSessionId(id);
-        res.setConversation(chatService.getConversation(id));
-        res.setGeneratedAt(java.time.Instant.now());
-        res.setBriefSummary(chatService.getBriefSummary(id));
-        res.setQuickReplies(chatService.getQuickReplies(id));
-        return ResponseEntity.ok(res);
-    }
-
 }

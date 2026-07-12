@@ -57,6 +57,15 @@ public class WebsiteService {
     public GeneratedWebsiteDto generate(Long userId, WebsiteGenerateRequest req) {
         Business b = businessRepository.findByIdAndOwner_Id(req.getBusinessId(), userId).orElseThrow();
 
+        // Update intent message in business profile if provided
+        BusinessProfile bp = businessProfileRepository.findByBusiness_Id(b.getId()).orElseGet(() -> {
+            BusinessProfile p = new BusinessProfile();
+            p.setBusiness(b);
+            return p;
+        });
+        bp.setIntentMessage(trimToNull(req.getIntentMessage()));
+        businessProfileRepository.save(bp);
+
         WebsiteCopyRequest copyReq = new WebsiteCopyRequest();
         copyReq.setBusinessProfile(buildBusinessSnapshot(b));
 

@@ -2,6 +2,7 @@ package com.backend.controller;
 
 import com.backend.dto.business.BusinessDetailDto;
 import com.backend.dto.business.BusinessUpsertRequest;
+import com.backend.dto.business.DailyAnalyticsDto;
 import com.backend.security.CustomUserDetails;
 import com.backend.service.BusinessService;
 import jakarta.validation.Valid;
@@ -44,5 +45,12 @@ public class BusinessController {
             @PathVariable Long id,
             @Valid @RequestBody BusinessUpsertRequest req) {
         return businessService.update(principal.getId(), id, req);
+    }
+
+    @GetMapping("/{id}/analytics")
+    public List<DailyAnalyticsDto> getAnalytics(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable Long id) {
+        return businessService.getAnalytics(principal.getId(), id);
     }
 }
