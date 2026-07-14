@@ -3,8 +3,10 @@ package com.backend.controller;
 import com.backend.dto.EmailContent;
 import com.backend.dto.EmailGenerationRequest;
 import com.backend.dto.EmailGenerationResponse;
+import com.backend.dto.EmailRecipientGroup;
 import com.backend.dto.SendEmailRequest;
 import com.backend.service.EmailService;
+import com.backend.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -33,11 +36,13 @@ public class EmailController {
      * Response: { "email": { "subject": "...", "body": "..." } }
      */
     @PostMapping("/generate-email")
-    public ResponseEntity<EmailGenerationResponse> generateEmail(@Valid @RequestBody EmailGenerationRequest request) {
+    public ResponseEntity<EmailGenerationResponse> generateEmail(
+            @Valid @RequestBody EmailGenerationRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal CustomUserDetails principal) {
         log.info("Received email generation request with idea: {}", request.getIdea());
         
         try {
-            EmailContent email = emailService.generateEmail(request);
+            EmailContent email = emailService.generateEmail(request, principal == null ? null : principal.getId());
             EmailGenerationResponse response = new EmailGenerationResponse(email);
             
             return ResponseEntity.ok(response);
@@ -52,11 +57,13 @@ public class EmailController {
      * POST /send-email
      */
     @PostMapping("/send-email")
-    public ResponseEntity<Map<String, String>> sendEmail(@Valid @RequestBody SendEmailRequest request) {
-        log.info("Received send email request for {} recipients", request.getRecipients().size());
+    public ResponseEntity<Map<String, String>> sendEmail(
+            @Valid @RequestBody SendEmailRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal CustomUserDetails principal) {
+        log.info("Received send email request for {} recipient groups", request.getGroupIds().size());
         
         try {
-            int sentCount = emailService.sendEmail(request);
+            int sentCount = emailService.sendEmail(request, principal.getId());
             
             Map<String, String> response = new HashMap<>();
             response.put("message", "Emails processed successfully");
@@ -70,5 +77,11 @@ public class EmailController {
             errorResponse.put("error", "Failed to send emails: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
+    }
+
+    @GetMapping("/email-recipient-groups")
+    public ResponseEntity<List<EmailRecipientGroup>> recipientGroups(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(emailService.getRecipientGroups(principal.getId()));
     }
 }

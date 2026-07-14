@@ -10,6 +10,7 @@ gen/
 ### Build tool directories ###
 target/
 build/
+.env
 
 ### Mac OS ###
 .DS_Store

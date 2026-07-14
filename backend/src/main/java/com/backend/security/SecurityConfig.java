@@ -41,11 +41,9 @@ public class SecurityConfig {
                                 auth.requestMatchers(
                                                 "/api/auth/**",
                                                 "/api/public/**",
-                                                "/generate-email",
-                                                "/send-email",
                                                 "/generate",
+                                                "/generate-email",
                                                 "/generate-posts",
-                                                "/api/ads/generate",
                                                 "/api/ads/health",
                                                 "/ask/**")
                                         .permitAll()

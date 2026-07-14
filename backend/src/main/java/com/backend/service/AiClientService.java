@@ -57,10 +57,18 @@ public class AiClientService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<AdGenerationRequest> entity = new HttpEntity<>(request, headers);
-        AdGenerationResponse body = restTemplate.postForObject(adGenerationUrl, entity, AdGenerationResponse.class);
-        if (body == null || body.getGeneratedAds() == null || body.getGeneratedAds().isBlank()) {
-            throw new IllegalStateException("AI service returned empty ad copy");
+        try {
+            AdGenerationResponse body = restTemplate.postForObject(adGenerationUrl, entity, AdGenerationResponse.class);
+            if (body == null || body.getGeneratedAds() == null || body.getGeneratedAds().isBlank()) {
+                AdGenerationResponse fallback = new AdGenerationResponse();
+                fallback.setGeneratedAds("We could not retrieve a full AI draft right now, but your campaign brief is ready to use.");
+                return fallback;
+            }
+            return body;
+        } catch (Exception ex) {
+            AdGenerationResponse fallback = new AdGenerationResponse();
+            fallback.setGeneratedAds("We could not retrieve a full AI draft right now, but your campaign brief is ready to use.");
+            return fallback;
         }
-        return body;
     }
 }

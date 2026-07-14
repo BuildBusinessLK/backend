@@ -6,7 +6,7 @@ public class AdsGenerationResponse {
     
     private String prompt;
     
-    @JsonProperty("generated_ads")
+    // @JsonProperty("generated_ads")
     private String generatedAds;
     
     @JsonProperty("share_links")

@@ -3,6 +3,14 @@ package com.backend.service;
 import com.backend.dto.EmailContent;
 import com.backend.dto.EmailGenerationRequest;
 import com.backend.dto.SendEmailRequest;
+import com.backend.repository.BusinessRepository;
+import com.backend.repository.BusinessProfileRepository;
+import com.backend.repository.UserProfileRepository;
+import com.backend.repository.UserRepository;
+import com.backend.entity.Business;
+import com.backend.entity.BusinessProfile;
+import com.backend.entity.User;
+import com.backend.entity.UserProfile;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
@@ -12,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.net.URI;
@@ -19,15 +28,29 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.backend.dto.EmailRecipientGroup;
+import com.backend.user.UserStatus;
 
 @Service
 public class EmailService {
-    
+
+    private final BusinessRepository businessRepository;
+    private final BusinessProfileRepository businessProfileRepository;
+    private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
+
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private final JavaMailSender mailSender;
     private final String mailHost;
@@ -37,11 +60,19 @@ public class EmailService {
 
     public EmailService(
             ObjectProvider<JavaMailSender> mailSender,
+            BusinessRepository businessRepository,
+            BusinessProfileRepository businessProfileRepository,
+            UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
             @Value("${spring.mail.host:}") String mailHost,
             @Value("${app.mail.from:}") String fromAddress,
             @Value("${app.openai.apiKey:}") String openaiApiKey,
             @Value("${app.openai.model:gpt-4o-mini}") String openaiModel) {
         this.mailSender = mailSender.getIfAvailable();
+        this.businessRepository = businessRepository;
+        this.businessProfileRepository = businessProfileRepository;
+        this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
         this.mailHost = mailHost;
         this.fromAddress = fromAddress;
         this.openaiApiKey = openaiApiKey == null ? "" : openaiApiKey.trim();
@@ -56,13 +87,14 @@ public class EmailService {
      * Generates an email based on the provided idea/purpose.
      * This is a basic implementation that can be extended with AI integration.
      */
-    public EmailContent generateEmail(EmailGenerationRequest request) {
+    public EmailContent generateEmail(EmailGenerationRequest request, Long userId) {
         log.info("Generating email from idea: {}", request.getIdea());
-        String idea = request.getIdea().trim();
-        
-        // Basic email generation logic
-        EmailContent email = createEmailFromIdea(idea);
-        
+        String idea = request.getIdea() == null ? "" : request.getIdea().trim();
+
+        populateProfileContext(request, userId);
+
+        EmailContent email = createEmailFromIdea(request, idea);
+
         log.info("Email generated successfully with subject: {}", email.getSubject());
         return email;
     }
@@ -70,9 +102,20 @@ public class EmailService {
     /**
      * Sends a generated email to each recipient.
      */
-    public int sendEmail(SendEmailRequest request) {
+    @Transactional(readOnly = true)
+    public int sendEmail(SendEmailRequest request, Long senderUserId) {
+        Map<String, RecipientGroup> groups = buildRecipientGroups(senderUserId);
+        Set<String> recipients = new LinkedHashSet<>();
+        for (String groupId : request.getGroupIds()) {
+            RecipientGroup group = groups.get(groupId);
+            if (group != null) recipients.addAll(group.emails);
+        }
+        if (recipients.isEmpty()) {
+            throw new IllegalArgumentException("The selected groups do not currently contain any recipients");
+        }
+
         int sentCount = 0;
-        for (String recipient : request.getRecipients()) {
+        for (String recipient : recipients) {
             if (isMailConfigured()) {
                 sendSingleEmail(recipient, request.getSubject(), request.getBody());
             } else {
@@ -88,16 +131,90 @@ public class EmailService {
         }
         return sentCount;
     }
+
+    /**
+     * Builds groups at request time, so group membership automatically includes
+     * newly registered users as soon as they complete their profile/business data.
+     */
+    @Transactional(readOnly = true)
+    public List<EmailRecipientGroup> getRecipientGroups(Long senderUserId) {
+        return buildRecipientGroups(senderUserId).values().stream()
+                .map(group -> new EmailRecipientGroup(group.id, group.label, group.emails.size()))
+                .toList();
+    }
+
+    private Map<String, RecipientGroup> buildRecipientGroups(Long senderUserId) {
+        Map<String, RecipientGroup> groups = new LinkedHashMap<>();
+        Map<Long, UserProfile> profiles = new LinkedHashMap<>();
+        for (UserProfile profile : userProfileRepository.findAll()) {
+            profiles.put(profile.getUser().getId(), profile);
+        }
+
+        for (User user : userRepository.findAll()) {
+            if (user.getStatus() != UserStatus.ACTIVE || user.getId().equals(senderUserId) || isBlank(user.getEmail())) continue;
+            UserProfile profile = profiles.get(user.getId());
+            if (profile != null && !isBlank(profile.getDistrict())) {
+                addGroup(groups, "location:" + normalize(profile.getDistrict()), "Location: " + profile.getDistrict(), user.getEmail());
+            }
+        }
+
+        for (Business business : businessRepository.findAll()) {
+            User owner = business.getOwner();
+            if (owner == null || owner.getStatus() != UserStatus.ACTIVE || owner.getId().equals(senderUserId) || isBlank(owner.getEmail())) continue;
+            if (business.getSector() != null) {
+                String sector = business.getSector().name();
+                addGroup(groups, "sector:" + normalize(sector), "Sector: " + sector, owner.getEmail());
+            }
+            businessProfileRepository.findByBusiness_Id(business.getId()).ifPresent(profile -> {
+                if (!isBlank(profile.getTargetMarket())) {
+                    addGroup(groups, "market:" + normalize(profile.getTargetMarket()), "Target market: " + profile.getTargetMarket(), owner.getEmail());
+                }
+                for (String keyword : descriptionKeywords(profile.getBusinessDescription())) {
+                    addGroup(groups, "description:" + keyword, "Business focus: " + keyword, owner.getEmail());
+                }
+            });
+        }
+        return groups;
+    }
+
+    private void addGroup(Map<String, RecipientGroup> groups, String id, String label, String email) {
+        groups.computeIfAbsent(id, ignored -> new RecipientGroup(id, label)).emails.add(email);
+    }
+
+    private List<String> descriptionKeywords(String description) {
+        if (isBlank(description)) return List.of();
+        Set<String> ignored = Set.of("about", "after", "and", "business", "from", "have", "into", "more", "offers", "provides", "that", "their", "they", "this", "with", "your");
+        Set<String> words = new LinkedHashSet<>();
+        for (String word : description.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+            if (word.length() >= 4 && !ignored.contains(word)) words.add(word);
+            if (words.size() == 5) break;
+        }
+        return new ArrayList<>(words);
+    }
+
+    private String normalize(String value) {
+        return value.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private static class RecipientGroup {
+        private final String id;
+        private final String label;
+        private final Set<String> emails = new LinkedHashSet<>();
+
+        private RecipientGroup(String id, String label) {
+            this.id = id;
+            this.label = label;
+        }
+    }
     
     /**
      * Creates a professional email based on the provided idea.
      * Can be replaced with AI API calls (e.g., OpenAI, Claude) for more sophisticated generation.
      */
-    private EmailContent createEmailFromIdea(String idea) {
-        // If OpenAI key configured, attempt AI-powered generation (professional tone)
+    private EmailContent createEmailFromIdea(EmailGenerationRequest request, String idea) {
         if (openaiApiKey != null && !openaiApiKey.isBlank()) {
             try {
-                EmailContent aiEmail = generateEmailWithAI(idea);
+                EmailContent aiEmail = generateEmailWithAI(request);
                 if (aiEmail != null && aiEmail.getSubject() != null && aiEmail.getBody() != null) {
                     return aiEmail;
                 }
@@ -106,9 +223,8 @@ public class EmailService {
             }
         }
 
-        // Default templates and logic (fallback)
         String subject = generateSubject(idea);
-        String body = generateBody(idea);
+        String body = generateBodyFromContext(request, idea);
 
         return new EmailContent(subject, body);
     }
@@ -117,13 +233,108 @@ public class EmailService {
      * Calls OpenAI Chat Completions to generate a professional subject and body.
      * Returns null on failure so caller can fall back.
      */
-    private EmailContent generateEmailWithAI(String idea) throws Exception {
+    private void populateProfileContext(EmailGenerationRequest request, Long userId) {
+        if (userId == null) {
+            setEmailDefaults(request);
+            return;
+        }
+
+        userProfileRepository.findByUser_Id(userId).ifPresent(profile -> {
+            if (isBlank(request.getUserName())) request.setUserName(profile.getFullName());
+        });
+
+        // Only use businesses owned by the signed-in user. This prevents profile data
+        // belonging to another user from ever being included in an AI prompt.
+        Business business = businessRepository.findByOwner_Id(userId).stream().findFirst().orElse(null);
+        if (business != null) {
+            if (isBlank(request.getCompanyName())) request.setCompanyName(business.getBusinessName());
+            if (isBlank(request.getIndustry()) && business.getSector() != null) {
+                request.setIndustry(business.getSector().name());
+            }
+            businessProfileRepository.findByBusiness_Id(business.getId()).ifPresent(profile -> {
+                if (isBlank(request.getTargetAudience())) request.setTargetAudience(profile.getTargetMarket());
+                request.setBusinessDescription(firstPresent(request.getBusinessDescription(), profile.getBusinessDescription()));
+                request.setMarketingGoals(firstPresent(request.getMarketingGoals(), profile.getMarketingGoals()));
+            });
+        }
+        setEmailDefaults(request);
+    }
+
+    private void setEmailDefaults(EmailGenerationRequest request) {
+        if (isBlank(request.getUserName())) request.setUserName("Your Name");
+        if (isBlank(request.getCompanyName())) request.setCompanyName("your business");
+        if (isBlank(request.getIndustry())) request.setIndustry("Not provided");
+        if (isBlank(request.getTargetAudience())) request.setTargetAudience("customers and prospects");
+        if (isBlank(request.getTone())) request.setTone("professional and approachable");
+        if (isBlank(request.getSignature())) request.setSignature(request.getUserName() + "\n" + request.getCompanyName());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private String firstPresent(String preferred, String fallback) {
+        return isBlank(preferred) ? fallback : preferred;
+    }
+
+    private EmailContent generateEmailWithAI(EmailGenerationRequest request) throws Exception {
         HttpClient client = HttpClient.newHttpClient();
         ObjectMapper mapper = new ObjectMapper();
 
-        String systemPrompt = "You are an expert copywriter who writes concise, professional, and clear business emails. Respond in JSON with exactly two fields: \"subject\" and \"body\". Do not include any extra commentary.";
-        String userPrompt = "Write a professional, polite email based on this idea: \"" + idea.replaceAll("\"", "\\\"") + "\". Keep subject concise (6-10 words) and body 3-6 short paragraphs. Use formal salutations and a clear call-to-action when relevant.";
+String systemPrompt =
+"""
+You are a senior business email writer.
 
+Generate a concise, suitable, professional email using only the supplied idea
+and user business profile. Do not invent offers, prices, dates, links, or facts.
+
+Return ONLY JSON:
+
+{
+  "subject":"...",
+  "body":"..."
+}
+""";
+String userPrompt =
+"""
+Business Information
+
+User Name: %s
+Company Name: %s
+Industry: %s
+Target Audience: %s
+Business Description: %s
+Marketing Goals: %s
+Tone: %s
+
+Email Idea:
+%s
+
+Signature:
+%s
+
+Instructions:
+
+1. Create a professional subject.
+2. Mention company name naturally.
+3. Match the requested tone.
+4. Write 3-5 professional paragraphs.
+5. Include a call to action.
+6. End with the signature.
+
+Return JSON only.
+"""
+.formatted(
+        request.getUserName(),
+        request.getCompanyName(),
+        request.getIndustry(),
+        request.getTargetAudience(),
+        request.getBusinessDescription(),
+        request.getMarketingGoals(),
+        request.getTone(),
+        request.getIdea(),
+        request.getSignature()
+);
         // Build chat request body
         ObjectNode payload = mapper.createObjectNode();
         payload.put("model", openaiModel);
@@ -132,10 +343,13 @@ public class EmailService {
         ObjectNode usr = mapper.createObjectNode(); usr.put("role", "user"); usr.put("content", userPrompt);
         messages.add(sys); messages.add(usr);
         payload.set("messages", messages);
+        ObjectNode responseFormat = mapper.createObjectNode();
+        responseFormat.put("type", "json_object");
+        payload.set("response_format", responseFormat);
         payload.put("temperature", 0.25);
         payload.put("max_tokens", 600);
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.openai.com/v1/chat/completions"))
                 .timeout(Duration.ofSeconds(30))
                 .header("Content-Type", "application/json")
@@ -143,7 +357,7 @@ public class EmailService {
                 .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(payload)))
                 .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {
             throw new IllegalStateException("OpenAI API returned status " + response.statusCode() + ": " + response.body());
         }
@@ -179,7 +393,7 @@ public class EmailService {
     
     /**
      * Generates a subject line based on the idea.
-     * TODO: Replace with AI-powered subject generation.
+     * Uses heuristic-based patterns when AI is unavailable.
      */
     private String generateSubject(String idea) {
         // Improved heuristic-based subject generation: concise, professional, no emojis
@@ -218,37 +432,46 @@ public class EmailService {
      * Generates an email body based on the idea.
      * TODO: Replace with AI-powered body generation.
      */
-    private String generateBody(String idea) {
+    private String generateBodyFromContext(EmailGenerationRequest request, String idea) {
         if (idea == null) idea = "";
         String trimmed = idea.trim();
+        String companyName = (request.getCompanyName() != null && !request.getCompanyName().isBlank())
+                ? request.getCompanyName()
+                : "our team";
+        String tone = (request.getTone() != null && !request.getTone().isBlank())
+                ? request.getTone()
+                : "professional";
+        String audience = (request.getTargetAudience() != null && !request.getTargetAudience().isBlank())
+                ? request.getTargetAudience()
+                : "our valued clients";
+        String userName = (request.getUserName() != null && !request.getUserName().isBlank())
+                ? request.getUserName()
+                : "Dear Customer";
 
         StringBuilder body = new StringBuilder();
-        body.append("Hello,").append("\n\n");
+        body.append("Hello ").append(userName).append(",").append("\n\n");
 
-        // Intro paragraph: what this email is about
         if (!trimmed.isEmpty()) {
-            body.append("I hope you're well. I'm reaching out regarding: ")
-                .append(trimmed)
-                .append(". ")
-                .append("Below is a brief overview and the next steps.")
-                .append("\n\n");
+            body.append("I hope you are well. I am reaching out regarding ")
+                    .append(trimmed)
+                    .append(". This message is written in a ")
+                    .append(tone)
+                    .append(" tone to make sure it feels clear, relevant, and useful for ")
+                    .append(audience)
+                    .append(".\n\n");
         } else {
-            body.append("I hope you're well. I wanted to share an update from our team that may be of interest to you.")
-                .append("\n\n");
+            body.append("I hope you are well. I wanted to share a helpful update from ")
+                    .append(companyName)
+                    .append(" that may be of interest to you.\n\n");
         }
 
-        // Value paragraph: benefits or details
-        body.append("What this means for you:\n");
-        body.append("- Clear benefits or key points related to the message.\n");
-        body.append("- How this can help or affect the recipient.\n\n");
-
-        // Call-to-action paragraph
-        body.append("Next steps:\n");
-        body.append("Please reply to this email if you'd like more details or to arrange a quick call to discuss further.\n\n");
-
-        // Closing
+        body.append("At ")
+                .append(companyName)
+                .append(", we focus on delivering value with care and consistency. This message is designed to highlight the benefit of our offering and support the next step in your journey.\n\n");
+        body.append("Please take a moment to review this update and let us know if you would like to discuss it further. We would be happy to answer any questions and help you move forward with confidence.\n\n");
+        body.append("Thank you for your time and continued interest.\n\n");
         body.append("Kind regards,\n");
-        body.append("The Team");
+        body.append(companyName);
 
         return body.toString();
     }

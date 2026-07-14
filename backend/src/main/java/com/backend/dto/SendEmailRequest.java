@@ -6,8 +6,8 @@ import java.util.List;
 
 public class SendEmailRequest {
     
-    @NotEmpty(message = "Recipients list cannot be empty")
-    private List<String> recipients;
+    @NotEmpty(message = "Select at least one recipient group")
+    private List<String> groupIds;
     
     @NotBlank(message = "Subject cannot be blank")
     private String subject;
@@ -18,18 +18,18 @@ public class SendEmailRequest {
     public SendEmailRequest() {
     }
     
-    public SendEmailRequest(List<String> recipients, String subject, String body) {
-        this.recipients = recipients;
+    public SendEmailRequest(List<String> groupIds, String subject, String body) {
+        this.groupIds = groupIds;
         this.subject = subject;
         this.body = body;
     }
     
-    public List<String> getRecipients() {
-        return recipients;
+    public List<String> getGroupIds() {
+        return groupIds;
     }
     
-    public void setRecipients(List<String> recipients) {
-        this.recipients = recipients;
+    public void setGroupIds(List<String> groupIds) {
+        this.groupIds = groupIds;
     }
     
     public String getSubject() {
