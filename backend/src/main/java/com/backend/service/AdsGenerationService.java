@@ -146,9 +146,7 @@ System.out.println("Generated Ads:");
 System.out.println(aiResponse.getGeneratedAds());
 System.out.println("=========================================");
             String generatedAds = extractGeneratedAds(aiResponse, request, business, userProfile);
-
             AdsGenerationResponse.ShareLinks shareLinks = generateShareLinks(generatedAds);
-
             return new AdsGenerationResponse(
                     prompt,
                     generatedAds,

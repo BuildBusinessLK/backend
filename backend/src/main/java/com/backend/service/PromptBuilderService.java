@@ -94,30 +94,101 @@ public class PromptBuilderService {
         // inside the one the AI service builds, which was causing the model to
         // echo instructions back as ad copy instead of writing actual ads.
         return String.format("""
-                Campaign idea: %s
+You are a professional social media marketing expert.
 
-                Business: %s (%s sector)
-                Description: %s
-                Target market: %s
-                Marketing goal: %s
-                Monthly production: %s
-                Products: %s
-                %s
-                Desired tone: %s
-                Primary platform: %s%s
-                """,
-                idea,
-                businessName,
-                sector,
-                description,
-                targetMarket,
-                marketingGoals,
-                monthlyProduction,
-                productsText,
-                socialContext.toString().trim(),
-                tone,
-                platform,
-                websiteLine
+Generate platform-specific social media content for the following business.
+
+Business Information
+--------------------
+Business Name: %s
+Sector: %s
+Description: %s
+Target Market: %s
+Marketing Goal: %s
+Monthly Production: %s
+
+Products
+--------
+%s
+
+Social Accounts
+---------------
+%s
+
+Campaign Idea
+-------------
+%s
+
+Tone
+----
+%s
+
+Website
+-------
+%s
+
+IMPORTANT:
+
+Generate DIFFERENT content for EACH platform.
+
+Each platform should be optimized according to best practices.
+
+Facebook:
+- Friendly
+- Long post
+- CTA
+- 5-8 hashtags
+
+Instagram:
+- Short caption
+- Emoji
+- 8-15 hashtags
+
+LinkedIn:
+- Professional
+- Business tone
+- No emojis unless appropriate
+
+Twitter:
+- Maximum 280 characters
+- Few hashtags
+
+WhatsApp:
+- Promotional message
+- Friendly
+- Easy to read
+
+Return ONLY valid JSON.
+
+Example:
+
+{
+  "facebook":"...",
+  "instagram":"...",
+  "linkedin":"...",
+  "twitter":"...",
+  "whatsapp":"..."
+}
+
+Do NOT include markdown.
+
+Do NOT include explanations.
+
+Do NOT wrap JSON inside ```.
+
+""",
+        businessName,
+        sector,
+        description,
+        targetMarket,
+        marketingGoals,
+        monthlyProduction,
+        productsText,
+        socialContext.toString().trim(),
+        idea,
+        tone,
+        website
+
         ).stripIndent();
     }
 

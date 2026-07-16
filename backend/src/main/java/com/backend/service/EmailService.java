@@ -55,8 +55,7 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final String mailHost;
     private final String fromAddress;
-    private final String openaiApiKey;
-    private final String openaiModel;
+    private final AiHordeService aiHordeService;
 
     public EmailService(
             ObjectProvider<JavaMailSender> mailSender,
@@ -66,8 +65,7 @@ public class EmailService {
             UserProfileRepository userProfileRepository,
             @Value("${spring.mail.host:}") String mailHost,
             @Value("${app.mail.from:}") String fromAddress,
-            @Value("${app.openai.apiKey:}") String openaiApiKey,
-            @Value("${app.openai.model:gpt-4o-mini}") String openaiModel) {
+            AiHordeService aiHordeService) {
         this.mailSender = mailSender.getIfAvailable();
         this.businessRepository = businessRepository;
         this.businessProfileRepository = businessProfileRepository;
@@ -75,8 +73,7 @@ public class EmailService {
         this.userProfileRepository = userProfileRepository;
         this.mailHost = mailHost;
         this.fromAddress = fromAddress;
-        this.openaiApiKey = openaiApiKey == null ? "" : openaiApiKey.trim();
-        this.openaiModel = openaiModel == null ? "gpt-4o-mini" : openaiModel.trim();
+        this.aiHordeService = aiHordeService;
     }
     
     /**
@@ -212,15 +209,13 @@ public class EmailService {
      * Can be replaced with AI API calls (e.g., OpenAI, Claude) for more sophisticated generation.
      */
     private EmailContent createEmailFromIdea(EmailGenerationRequest request, String idea) {
-        if (openaiApiKey != null && !openaiApiKey.isBlank()) {
-            try {
-                EmailContent aiEmail = generateEmailWithAI(request);
-                if (aiEmail != null && aiEmail.getSubject() != null && aiEmail.getBody() != null) {
-                    return aiEmail;
-                }
-            } catch (Exception ex) {
-                log.warn("AI email generation failed, falling back to templates: {}", ex.getMessage());
+        try {
+            EmailContent aiEmail = generateEmailWithAI(request);
+            if (aiEmail != null && aiEmail.getSubject() != null && aiEmail.getBody() != null) {
+                return aiEmail;
             }
+        } catch (Exception ex) {
+            log.warn("AI email generation failed, falling back to templates: {}", ex.getMessage());
         }
 
         String subject = generateSubject(idea);
@@ -278,7 +273,6 @@ public class EmailService {
     }
 
     private EmailContent generateEmailWithAI(EmailGenerationRequest request) throws Exception {
-        HttpClient client = HttpClient.newHttpClient();
         ObjectMapper mapper = new ObjectMapper();
 
 String systemPrompt =
@@ -335,40 +329,16 @@ Return JSON only.
         request.getIdea(),
         request.getSignature()
 );
-        // Build chat request body
-        ObjectNode payload = mapper.createObjectNode();
-        payload.put("model", openaiModel);
-        ArrayNode messages = mapper.createArrayNode();
-        ObjectNode sys = mapper.createObjectNode(); sys.put("role", "system"); sys.put("content", systemPrompt);
-        ObjectNode usr = mapper.createObjectNode(); usr.put("role", "user"); usr.put("content", userPrompt);
-        messages.add(sys); messages.add(usr);
-        payload.set("messages", messages);
-        ObjectNode responseFormat = mapper.createObjectNode();
-        responseFormat.put("type", "json_object");
-        payload.set("response_format", responseFormat);
-        payload.put("temperature", 0.25);
-        payload.put("max_tokens", 600);
 
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.openai.com/v1/chat/completions"))
-                .timeout(Duration.ofSeconds(30))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + openaiApiKey)
-                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(payload)))
-                .build();
-
-        HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() / 100 != 2) {
-            throw new IllegalStateException("OpenAI API returned status " + response.statusCode() + ": " + response.body());
+        String prompt = systemPrompt + "\n\n" + userPrompt;
+        String content = aiHordeService.generateText(prompt);
+        if (content == null || content.isBlank()) {
+            throw new IllegalStateException("AI Horde returned empty response");
         }
-
-        JsonNode root = mapper.readTree(response.body());
-        JsonNode choices = root.path("choices");
-        if (!choices.isArray() || choices.size() == 0) {
-            throw new IllegalStateException("No choices in OpenAI response");
+        content = content.trim();
+        if (content.startsWith("```")) {
+            content = content.replaceAll("^```(?:json)?\\s*", "").replaceAll("\\s*```$", "").trim();
         }
-
-        String content = choices.get(0).path("message").path("content").asText();
 
         // Expecting JSON string like {"subject":"...","body":"..."}
         try {
