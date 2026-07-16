@@ -43,6 +43,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.backend.dto.EmailRecipientGroup;
 import com.backend.user.UserStatus;
 
+import com.backend.repository.CustomerRepository;
+import com.backend.entity.Customer;
+
 @Service
 public class EmailService {
 
@@ -50,6 +53,7 @@ public class EmailService {
     private final BusinessProfileRepository businessProfileRepository;
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
+    private final CustomerRepository customerRepository;
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private final JavaMailSender mailSender;
@@ -63,6 +67,7 @@ public class EmailService {
             BusinessProfileRepository businessProfileRepository,
             UserRepository userRepository,
             UserProfileRepository userProfileRepository,
+            CustomerRepository customerRepository,
             @Value("${spring.mail.host:}") String mailHost,
             @Value("${app.mail.from:}") String fromAddress,
             AiHordeService aiHordeService) {
@@ -71,6 +76,7 @@ public class EmailService {
         this.businessProfileRepository = businessProfileRepository;
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
+        this.customerRepository = customerRepository;
         this.mailHost = mailHost;
         this.fromAddress = fromAddress;
         this.aiHordeService = aiHordeService;
@@ -142,6 +148,60 @@ public class EmailService {
 
     private Map<String, RecipientGroup> buildRecipientGroups(Long senderUserId) {
         Map<String, RecipientGroup> groups = new LinkedHashMap<>();
+
+        // If the sender has a business with seeded customers, use them instead of the platform-wide fallback.
+        Business business = businessRepository.findByOwner_Id(senderUserId).stream().findFirst().orElse(null);
+        if (business != null) {
+            List<Customer> customers = customerRepository.findByBusiness_Id(business.getId());
+            if (!customers.isEmpty()) {
+                for (Customer customer : customers) {
+                    String email = customer.getEmail();
+                    if (isBlank(email)) continue;
+
+                    if (customer.isVip()) {
+                        addGroup(groups, "vip", "VIP Customers", email);
+                    }
+                    if (customer.isNew()) {
+                        addGroup(groups, "new", "New Customers", email);
+                    }
+                    if (customer.isFrequentBuyer()) {
+                        addGroup(groups, "frequent", "Frequent Buyers", email);
+                    }
+                    if (customer.isHighSpending()) {
+                        addGroup(groups, "high_spending", "High Spending Customers", email);
+                    }
+                    if (customer.isInactive()) {
+                        addGroup(groups, "inactive", "Inactive Customers", email);
+                    }
+                    if (customer.isInterestedInDiscounts()) {
+                        addGroup(groups, "discounts", "Interested in Discounts", email);
+                    }
+                    if (customer.isInterestedInNewProducts()) {
+                        addGroup(groups, "new_products", "Interested in New Products", email);
+                    }
+                    if (!isBlank(customer.getProductCategory())) {
+                        addGroup(groups, "category:" + normalize(customer.getProductCategory()), "Category: " + customer.getProductCategory(), email);
+                    }
+                    if (business.getSector() != null) {
+                        String sectorLabel = capitalizeWords(business.getSector().name().replace('_', ' '));
+                        addGroup(groups, "sector:" + normalize(business.getSector().name()), "Sector: " + sectorLabel, email);
+                    }
+                    if (!isBlank(customer.getDistrict())) {
+                        addGroup(groups, "location:" + normalize(customer.getDistrict()), "Location: " + customer.getDistrict(), email);
+                    }
+                    int age = customer.getAge();
+                    if (age > 0) {
+                        String ageGroup = age < 25 ? "Age: Under 25" : (age <= 45 ? "Age: 25 - 45" : "Age: Over 45");
+                        addGroup(groups, "age:" + normalize(ageGroup), ageGroup, email);
+                    }
+                    int freq = customer.getPurchaseFrequency();
+                    String freqGroup = freq <= 2 ? "Frequency: Low (1-2 orders)" : (freq <= 5 ? "Frequency: Medium (3-5 orders)" : "Frequency: High (6+ orders)");
+                    addGroup(groups, "freq:" + normalize(freqGroup), freqGroup, email);
+                }
+                return groups;
+            }
+        }
+
         Map<Long, UserProfile> profiles = new LinkedHashMap<>();
         for (UserProfile profile : userProfileRepository.findAll()) {
             profiles.put(profile.getUser().getId(), profile);
@@ -155,14 +215,14 @@ public class EmailService {
             }
         }
 
-        for (Business business : businessRepository.findAll()) {
-            User owner = business.getOwner();
+        for (Business b : businessRepository.findAll()) {
+            User owner = b.getOwner();
             if (owner == null || owner.getStatus() != UserStatus.ACTIVE || owner.getId().equals(senderUserId) || isBlank(owner.getEmail())) continue;
-            if (business.getSector() != null) {
-                String sector = business.getSector().name();
+            if (b.getSector() != null) {
+                String sector = b.getSector().name();
                 addGroup(groups, "sector:" + normalize(sector), "Sector: " + sector, owner.getEmail());
             }
-            businessProfileRepository.findByBusiness_Id(business.getId()).ifPresent(profile -> {
+            businessProfileRepository.findByBusiness_Id(b.getId()).ifPresent(profile -> {
                 if (!isBlank(profile.getTargetMarket())) {
                     addGroup(groups, "market:" + normalize(profile.getTargetMarket()), "Target market: " + profile.getTargetMarket(), owner.getEmail());
                 }
