@@ -172,7 +172,13 @@ public class WebsiteService {
         d.setCoverImageUrl(g.getCoverImageUrl());
         d.setContactEmail(g.getContactEmail());
         d.setPhone(g.getPhone());
-        d.setPublishedUrl(g.getPublishedUrl());
+        
+        String url = g.getPublishedUrl();
+        if (url != null && publicSiteBaseUrl != null && !publicSiteBaseUrl.isBlank()) {
+            String base = publicSiteBaseUrl.replaceAll("/$", "");
+            url = url.replaceFirst("^https?://localhost:3001", base);
+        }
+        d.setPublishedUrl(url);
         d.setStatus(g.getStatus());
         return d;
     }
