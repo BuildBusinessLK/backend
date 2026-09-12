@@ -3,6 +3,8 @@ package com.backend.service;
 import com.backend.domain.ChatSender;
 import com.backend.dto.ai.AiChatRequest;
 import com.backend.dto.ai.AiChatResponse;
+import com.backend.dto.ai.BusinessRecommendationRequest;
+import com.backend.dto.ai.BusinessRecommendationResponse;
 import com.backend.dto.chat.ChatMessageDto;
 import com.backend.dto.chat.ChatSendRequest;
 import com.backend.dto.chat.ChatSendResponse;
@@ -129,6 +131,43 @@ public class ChatService {
         out.setSessionId(session.getId());
         out.setMessageId(aiMsg.getId());
         return out;
+    }
+
+    @Transactional
+    public BusinessRecommendationResponse recommendBusiness(Long userId, Long sessionId, Map<String, Object> userProfile, Map<String, Object> businessProfile) {
+        User user = userRepository.findById(userId).orElseThrow();
+        ChatSession session = sessionId == null ? null : chatSessionRepository.findByIdAndUser_Id(sessionId, userId).orElse(null);
+        if (session == null) {
+            session = new ChatSession();
+            session.setUser(user);
+            session.setTitle("Product fit check");
+            session = chatSessionRepository.save(session);
+        }
+
+        BusinessRecommendationRequest aiRequest = new BusinessRecommendationRequest();
+        aiRequest.setSessionId(session.getId());
+        aiRequest.setUserProfile(userProfile);
+        aiRequest.setBusinessProfile(businessProfile);
+
+        BusinessRecommendationResponse response = aiClientService.requestBusinessRecommendation(aiRequest);
+        String guidance = response.getGuidance() == null ? "" : response.getGuidance().trim();
+        String recommendation = response.getRecommendedBusiness() == null ? "" : response.getRecommendedBusiness().trim();
+
+        String userPrompt = "Which product suits me more?";
+        ChatMessage userMsg = new ChatMessage();
+        userMsg.setSession(session);
+        userMsg.setSender(ChatSender.USER);
+        userMsg.setMessage(userPrompt);
+        chatMessageRepository.save(userMsg);
+
+        String aiText = "**Recommended Business:** " + recommendation + "\n\n**Guidance:**\n" + guidance;
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setSession(session);
+        aiMsg.setSender(ChatSender.AI);
+        aiMsg.setMessage(aiText);
+        chatMessageRepository.save(aiMsg);
+
+        return response;
     }
 
     private String summarizeTitle(String question) {

@@ -4,6 +4,8 @@ import com.backend.dto.ai.AdGenerationRequest;
 import com.backend.dto.ai.AdGenerationResponse;
 import com.backend.dto.ai.AiChatRequest;
 import com.backend.dto.ai.AiChatResponse;
+import com.backend.dto.ai.BusinessRecommendationRequest;
+import com.backend.dto.ai.BusinessRecommendationResponse;
 import com.backend.dto.ai.WebsiteCopyRequest;
 import com.backend.dto.ai.WebsiteCopyResponse;
 import org.slf4j.Logger;
