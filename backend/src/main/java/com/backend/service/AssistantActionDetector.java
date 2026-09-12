@@ -35,6 +35,31 @@ public class AssistantActionDetector {
             "web page"
     );
 
+    // EMAIL_CAMPAIGN — active
+    private static final List<String> EMAIL_KEYWORDS = List.of(
+            "email campaign",
+            "send emails",
+            "email marketing",
+            "newsletter",
+            "customer email",
+            "email your customers",
+            "email blast",
+            "mail campaign"
+    );
+
+    // SOCIAL_MARKETING — active
+    private static final List<String> SOCIAL_KEYWORDS = List.of(
+            "social media post",
+            "ad campaign",
+            "facebook ad",
+            "instagram ad",
+            "social ad",
+            "social marketing",
+            "create an ad",
+            "post generator",
+            "advertisement"
+    );
+
     // VIEW_PROFILE — active (future: navigate user to profile editor)
     private static final List<String> PROFILE_KEYWORDS = List.of(
             "update your business profile",
@@ -53,7 +78,6 @@ public class AssistantActionDetector {
 
     /**
      * Returns the most relevant action constant or {@code null} if none applies.
-     * Currently only activates GENERATE_WEBSITE and VIEW_PROFILE.
      */
     public String detectActionForAssistantMessage(String message) {
         if (message == null || message.isBlank()) {
@@ -69,6 +93,20 @@ public class AssistantActionDetector {
         }
         if (WEBSITE_PATTERN.matcher(message).find()) {
             return AssistantActions.GENERATE_WEBSITE;
+        }
+
+        // EMAIL_CAMPAIGN
+        for (String keyword : EMAIL_KEYWORDS) {
+            if (normalized.contains(keyword)) {
+                return AssistantActions.EMAIL_CAMPAIGN;
+            }
+        }
+
+        // SOCIAL_MARKETING
+        for (String keyword : SOCIAL_KEYWORDS) {
+            if (normalized.contains(keyword)) {
+                return AssistantActions.SOCIAL_MARKETING;
+            }
         }
 
         // VIEW_PROFILE (lower priority)

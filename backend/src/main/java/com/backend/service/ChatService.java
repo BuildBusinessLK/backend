@@ -167,6 +167,7 @@ public class ChatService {
         aiMsg.setMessage(aiText);
         chatMessageRepository.save(aiMsg);
 
+        response.setSessionId(session.getId());
         return response;
     }
 
@@ -174,11 +175,31 @@ public class ChatService {
         if (question == null) {
             return "New chat";
         }
-        String t = question.trim();
-        if (t.length() <= 48) {
-            return t.isEmpty() ? "New chat" : t;
+        String clean = question.trim().replaceAll("^[?.,!\\s]+", "");
+        if (clean.isEmpty()) return "New chat";
+
+        // Remove conversational preambles
+        String lower = clean.toLowerCase();
+        String[] prefixes = {
+            "can you tell me about ", "tell me about ", "can you help me with ",
+            "how do i ", "how can i ", "how to ", "what is ", "what are ",
+            "i want to know about ", "i need help with ", "i want to create "
+        };
+        for (String p : prefixes) {
+            if (lower.startsWith(p)) {
+                clean = clean.substring(p.length()).trim();
+                break;
+            }
         }
-        return t.substring(0, 45) + "…";
+        if (clean.isEmpty()) clean = question.trim();
+
+        // Capitalize first character
+        clean = Character.toUpperCase(clean.charAt(0)) + clean.substring(1);
+
+        if (clean.length() <= 45) {
+            return clean;
+        }
+        return clean.substring(0, 42).trim() + "…";
     }
 
     private List<Map<String, String>> buildChatHistory(Long sessionId) {

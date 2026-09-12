@@ -88,6 +88,39 @@ public class User {
         this.status = status;
     }
 
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "verification_otp", length = 10)
+    private String verificationOtp;
+
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
+    public Boolean getEmailVerified() {
+        return emailVerified != null && emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getVerificationOtp() {
+        return verificationOtp;
+    }
+
+    public void setVerificationOtp(String verificationOtp) {
+        this.verificationOtp = verificationOtp;
+    }
+
+    public LocalDateTime getOtpExpiry() {
+        return otpExpiry;
+    }
+
+    public void setOtpExpiry(LocalDateTime otpExpiry) {
+        this.otpExpiry = otpExpiry;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }

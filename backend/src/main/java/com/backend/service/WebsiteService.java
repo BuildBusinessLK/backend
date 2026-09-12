@@ -112,6 +112,47 @@ public class WebsiteService {
         return toDto(gw);
     }
 
+    @Transactional
+    public GeneratedWebsiteDto update(Long userId, Long websiteId, com.backend.dto.website.WebsiteUpdateRequest req) {
+        GeneratedWebsite gw = generatedWebsiteRepository.findById(websiteId).orElseThrow();
+        Business b = gw.getBusiness();
+        if (!b.getOwner().getId().equals(userId)) {
+            throw new IllegalStateException("Forbidden");
+        }
+        if (req.getHeroText() != null) {
+            gw.setHeroText(trimToNull(req.getHeroText()));
+        }
+        if (req.getAboutText() != null) {
+            gw.setAboutText(trimToNull(req.getAboutText()));
+        }
+        if (req.getMarketingText() != null) {
+            gw.setMarketingText(trimToNull(req.getMarketingText()));
+        }
+        if (req.getPrimaryColor() != null) {
+            gw.setPrimaryColor(trimToNull(req.getPrimaryColor()));
+        }
+        if (req.getSecondaryColor() != null) {
+            gw.setSecondaryColor(trimToNull(req.getSecondaryColor()));
+        }
+        if (req.getLogoUrl() != null) {
+            gw.setLogoUrl(trimToNull(req.getLogoUrl()));
+        }
+        if (req.getCoverImageUrl() != null) {
+            gw.setCoverImageUrl(trimToNull(req.getCoverImageUrl()));
+        }
+        if (req.getContactEmail() != null) {
+            gw.setContactEmail(trimToNull(req.getContactEmail()));
+        }
+        if (req.getPhone() != null) {
+            gw.setPhone(trimToNull(req.getPhone()));
+        }
+        if (req.getTemplateId() != null && !req.getTemplateId().isBlank()) {
+            gw.setTemplateId(req.getTemplateId().trim());
+        }
+        gw = generatedWebsiteRepository.save(gw);
+        return toDto(gw);
+    }
+
     private Map<String, Object> buildBusinessSnapshot(Business b) {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("hasBusiness", true);

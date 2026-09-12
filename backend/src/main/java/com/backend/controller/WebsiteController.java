@@ -41,4 +41,12 @@ public class WebsiteController {
             @AuthenticationPrincipal CustomUserDetails principal, @PathVariable Long id) {
         return websiteService.publish(principal.getId(), id);
     }
+
+    @PutMapping("/{id}")
+    public GeneratedWebsiteDto update(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable Long id,
+            @RequestBody com.backend.dto.website.WebsiteUpdateRequest req) {
+        return websiteService.update(principal.getId(), id, req);
+    }
 }

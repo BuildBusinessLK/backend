@@ -5,6 +5,15 @@ public class BusinessRecommendationResponse {
     private String recommendedBusiness;
     private String guidance;
     private String message;
+    private Long sessionId;
+
+    public Long getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(Long sessionId) {
+        this.sessionId = sessionId;
+    }
 
     public String getRecommendedBusiness() {
         return recommendedBusiness;

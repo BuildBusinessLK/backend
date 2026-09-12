@@ -35,6 +35,9 @@ public class AiClientService {
     @Value("${ai.service.ad-generation-url:http://localhost:8000/ad-generate}")
     private String adGenerationUrl;
 
+    @Value("${ai.service.recommendation-url:http://localhost:8000/business-advisor}")
+    private String recommendationUrl;
+
     public AiClientService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
@@ -90,6 +93,28 @@ public class AiClientService {
         } catch (Exception ex) {
             AdGenerationResponse fallback = new AdGenerationResponse();
             fallback.setGeneratedAds("We could not retrieve a full AI draft right now, but your campaign brief is ready to use.");
+            return fallback;
+        }
+    }
+
+    public BusinessRecommendationResponse requestBusinessRecommendation(BusinessRecommendationRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<BusinessRecommendationRequest> entity = new HttpEntity<>(request, headers);
+        try {
+            BusinessRecommendationResponse body = restTemplate.postForObject(recommendationUrl, entity, BusinessRecommendationResponse.class);
+            if (body == null) {
+                BusinessRecommendationResponse fallback = new BusinessRecommendationResponse();
+                fallback.setMessage("AI service returned empty recommendation");
+                return fallback;
+            }
+            return body;
+        } catch (Exception ex) {
+            log.warn("AI service recommendation request failed: {}", ex.getMessage());
+            BusinessRecommendationResponse fallback = new BusinessRecommendationResponse();
+            fallback.setRecommendedBusiness("Value-Added Production");
+            fallback.setGuidance("Focus on value-added processing for higher margins in your local sector. Optimize production yield and target local retail and export opportunities.");
+            fallback.setMessage("Operating with standard SME business guidance.");
             return fallback;
         }
     }
