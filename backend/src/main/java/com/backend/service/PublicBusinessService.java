@@ -61,8 +61,7 @@ public class PublicBusinessService {
         dto.setSocialLinks(mapSocial(businessSocialLinkRepository.findByBusiness_IdOrderByIdAsc(b.getId())));
 
         return generatedWebsiteRepository
-                .findFirstByBusiness_IdOrderByUpdatedAtDesc(b.getId())
-                .filter(gw -> gw.getStatus() == WebsiteStatus.PUBLISHED)
+                .findFirstByBusiness_IdAndStatusOrderByUpdatedAtDesc(b.getId(), WebsiteStatus.PUBLISHED)
                 .map(gw -> {
                     applyWebsite(dto, gw);
                     return dto;

@@ -57,6 +57,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.web.client.HttpStatusCodeException.class)
+    public ResponseEntity<ErrorResponse> handleHttpStatusCodeException(org.springframework.web.client.HttpStatusCodeException ex) {
+        log.warn("Downstream service HTTP error: status {}", ex.getStatusCode());
+        ErrorResponse error =
+                new ErrorResponse(
+                        HttpStatus.BAD_GATEWAY.value(),
+                        "External service is temporarily unavailable (" + ex.getStatusCode().value() + ")",
+                        LocalDateTime.now());
+        return new ResponseEntity<>(error, HttpStatus.BAD_GATEWAY);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected exception occurred: {}", ex.getMessage(), ex);

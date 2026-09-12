@@ -16,8 +16,10 @@ public class BackendApplication {
     @Bean
     public RestTemplate restTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000);
-        factory.setReadTimeout(10000);
+        // Connect timeout: 10 s
+        factory.setConnectTimeout(10_000);
+        // Read timeout: 120 s — llama3 8B on local hardware can take 30–60 s to respond
+        factory.setReadTimeout(120_000);
         return new RestTemplate(factory);
     }
 }

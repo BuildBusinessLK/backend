@@ -23,7 +23,9 @@ public class PublicBusinessController {
     public ResponseEntity<?> bySlug(@PathVariable String slug) {
         return publicBusinessService
                 .getBySlug(slug)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .<ResponseEntity<?>>map(response -> ResponseEntity.ok()
+                        .header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+                        .body(response))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Not found")));
     }
 }
