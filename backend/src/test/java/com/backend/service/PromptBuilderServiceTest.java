@@ -46,6 +46,9 @@ class PromptBuilderServiceTest {
 
         AdsGenerationRequest request = new AdsGenerationRequest();
         request.setIdea("Launch a festive offer");
+        request.setTone("friendly");
+        request.setPlatform("instagram");
+        request.setWebsite("https://kithulhouse.lk");
 
         String prompt = promptBuilderService.buildAdPrompt(business, request, socialLinks, userProfile);
 
@@ -54,7 +57,10 @@ class PromptBuilderServiceTest {
                 .contains("Nimal Perera")
                 .contains("https://facebook.com/kithulhouse")
                 .contains("https://instagram.com/kithulhouse")
-                .contains("festive offer");
+                .contains("festive offer")
+                .contains("friendly")
+                .contains("instagram")
+                .contains("https://kithulhouse.lk");
     }
 
     private BusinessSocialLinkDto socialLink(String platform, String url) {

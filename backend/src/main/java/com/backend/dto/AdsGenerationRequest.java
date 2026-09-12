@@ -4,20 +4,19 @@ import jakarta.validation.constraints.NotBlank;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class AdsGenerationRequest {
-    
+
     @NotBlank(message = "Idea cannot be blank")
     private String idea;
-    
+
     @JsonProperty("product_type")
     private String productType;
-    
+
     @JsonProperty("target_audience")
     private String targetAudience;
-    
+
     private String tone;
     private String platform;
-private String website;
-    
+    private String website;
 
     public AdsGenerationRequest() {}
 
@@ -58,5 +57,21 @@ private String website;
 
     public void setTone(String tone) {
         this.tone = tone;
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = website;
+    }
+
+    public String getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(String platform) {
+        this.platform = platform;
     }
 }

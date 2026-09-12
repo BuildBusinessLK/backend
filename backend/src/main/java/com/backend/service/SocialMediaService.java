@@ -28,21 +28,17 @@ import java.util.stream.Collectors;
 public class SocialMediaService {
 
     private static final Logger log = LoggerFactory.getLogger(SocialMediaService.class);
-    private static final String OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
-    private final String openAiApiKey;
-    private final String openAiModel;
+    private final AiHordeService aiHordeService;
 
     public SocialMediaService(
             ObjectMapper objectMapper,
-            @Value("${OPENAI_API_KEY:}") String openAiApiKey,
-            @Value("${OPENAI_MODEL:gpt-4o-mini}") String openAiModel) {
+            AiHordeService aiHordeService) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newHttpClient();
-        this.openAiApiKey = openAiApiKey;
-        this.openAiModel = openAiModel;
+        this.aiHordeService = aiHordeService;
     }
 
     public SocialAdResponse generateAd(SocialAdRequest request) {
@@ -235,7 +231,7 @@ public class SocialMediaService {
     }
 
     private boolean hasOpenAiKey() {
-        return openAiApiKey != null && !openAiApiKey.isBlank();
+        return true;
     }
 
     private SocialAdResponse generateAdWithOpenAi(String idea, String tone, String platform) {
@@ -295,39 +291,19 @@ public class SocialMediaService {
     }
 
     private JsonNode callOpenAi(String prompt) throws IOException, InterruptedException {
-        Map<String, Object> body = Map.of(
-                "model", openAiModel,
-                "messages", List.of(
-                        Map.of("role", "user", "content", prompt)
-                ),
-                "temperature", 0.7
-        );
-
-        String requestBody = objectMapper.writeValueAsString(body);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(OPENAI_ENDPOINT))
-                .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + openAiApiKey)
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
-                .build();
-
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (response.statusCode() / 100 != 2) {
-            throw new IOException("OpenAI API returned status " + response.statusCode());
+        try {
+            String text = aiHordeService.generateText(prompt);
+            if (text == null || text.isBlank()) {
+                throw new IOException("AI Horde returned empty response");
+            }
+            String content = text.trim();
+            if (content.startsWith("```")) {
+                content = content.replaceAll("^```(?:json)?\\s*", "").replaceAll("\\s*```$", "").trim();
+            }
+            return objectMapper.readTree(content);
+        } catch (Exception ex) {
+            throw new IOException("AI Horde generation failed: " + ex.getMessage(), ex);
         }
-
-        JsonNode root = objectMapper.readTree(response.body());
-        JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
-        if (contentNode.isMissingNode() || contentNode.asText().isBlank()) {
-            throw new IOException("OpenAI response did not contain content");
-        }
-
-        String content = contentNode.asText().trim();
-        if (content.startsWith("```")) {
-            content = content.replaceAll("^```(?:json)?\\s*", "").replaceAll("\\s*```$", "").trim();
-        }
-
-        return objectMapper.readTree(content);
     }
 
     private String textOrFallback(JsonNode node, String fieldName, String fallback) {

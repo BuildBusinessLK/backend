@@ -1,5 +1,6 @@
 package com.backend.service;
 
+import com.backend.domain.Sector;
 import com.backend.dto.AdsGenerationRequest;
 import com.backend.dto.business.BusinessDetailDto;
 import com.backend.dto.business.BusinessProductDto;
@@ -69,105 +70,130 @@ public class PromptBuilderService {
             socialContext.append("Social Accounts: none provided\n");
         }
 
-        StringBuilder userContext = new StringBuilder();
-        if (userProfile != null && !userProfile.isEmpty()) {
-            userContext.append("User Profile:\n");
-            userProfile.forEach((key, value) -> {
-                if (value != null) {
-                    userContext.append("- ")
-                            .append(key)
-                            .append(": ")
-                            .append(value)
-                            .append("\n");
-                }
-            });
-        } else {
-            userContext.append("User Profile: not provided\n");
-        }
+        String tone = (request.getTone() != null && !request.getTone().isBlank()) ? request.getTone() : "professional";
+        String platform = (request.getPlatform() != null && !request.getPlatform().isBlank()) ? request.getPlatform() : "social media";
+        String website = (request.getWebsite() != null && !request.getWebsite().isBlank()) ? request.getWebsite() : "";
+        String idea = (request.getIdea() != null && !request.getIdea().isBlank()) ? request.getIdea() : "a compelling offer";
 
+        String businessName = orDefault(business.getBusinessName(), "the business");
+        Sector sectorValue = business.getSector();
+        String sector = orDefault(sectorValue != null ? sectorValue.name() : null, "General");
+        String description = orDefault(business.getBusinessDescription(), "Not specified");
+        String targetMarket = orDefault(business.getTargetMarket(), "General audience");
+        String marketingGoals = orDefault(business.getMarketingGoals(), "Not specified");
+        String monthlyProduction = business.getMonthlyProduction() != null
+                ? business.getMonthlyProduction().toString()
+                : "Not specified";
+        String productsText = products.length() > 0 ? products.toString().trim() : "Not specified";
+        String websiteLine = website.isBlank() ? "" : "\nWebsite: " + website;
+
+        // NOTE: This is a concise creative brief, not a full standalone prompt.
+        // The AI service (Python) owns the system-level instructions and formatting
+        // rules; this brief only supplies the facts the model needs to personalize
+        // the ad. Keeping this short avoids nesting a second, conflicting prompt
+        // inside the one the AI service builds, which was causing the model to
+        // echo instructions back as ad copy instead of writing actual ads.
         return String.format("""
-You are an expert AI marketing strategist and advertising copywriter.
+You are a professional social media marketing expert.
 
-Your task is to generate a professional advertisement that matches the user's business and audience.
+Generate platform-specific social media content for the following business.
 
-==============================
-BUSINESS INFORMATION
-==============================
+Business Information
+--------------------
+Business Name: %s
+Sector: %s
+Description: %s
+Target Market: %s
+Marketing Goal: %s
+Monthly Production: %s
 
-Business Name:
+Products
+--------
 %s
 
-Industry:
+Social Accounts
+---------------
 %s
 
-Business Description:
+Campaign Idea
+-------------
 %s
 
-Target Market:
+Tone
+----
 %s
 
-Marketing Goals:
+Website
+-------
 %s
 
-Monthly Production:
-%s
+IMPORTANT:
 
-Products:
-%s
+Generate DIFFERENT content for EACH platform.
 
-%s
+Each platform should be optimized according to best practices.
 
-%s
+Facebook:
+- Friendly
+- Long post
+- CTA
+- 5-8 hashtags
 
-==============================
-USER REQUEST
-==============================
+Instagram:
+- Short caption
+- Emoji
+- 8-15 hashtags
 
-%s
+LinkedIn:
+- Professional
+- Business tone
+- No emojis unless appropriate
 
-==============================
-INSTRUCTIONS
-==============================
+Twitter:
+- Maximum 280 characters
+- Few hashtags
 
-Understand the business before writing.
+WhatsApp:
+- Promotional message
+- Friendly
+- Easy to read
 
-Use the business information and available social account details to personalize the advertisement.
+Return ONLY valid JSON.
 
-Write naturally and make the ad feel relevant to the user’s actual profile.
+Example:
 
-Highlight the business strengths.
+{
+  "facebook":"...",
+  "instagram":"...",
+  "linkedin":"...",
+  "twitter":"...",
+  "whatsapp":"..."
+}
 
-Focus on the target market.
+Do NOT include markdown.
 
-Create a persuasive call-to-action.
+Do NOT include explanations.
 
-Generate:
+Do NOT wrap JSON inside ```.
 
-1. Facebook Advertisement
-
-2. Instagram Caption
-
-3. Google Advertisement
-
-4. Five Headlines
-
-5. Five Marketing Hashtags
-
-6. Marketing Suggestions
 """,
+        businessName,
+        sector,
+        description,
+        targetMarket,
+        marketingGoals,
+        monthlyProduction,
+        productsText,
+        socialContext.toString().trim(),
+        idea,
+        tone,
+        website
 
-                business.getBusinessName(),
-                business.getSector(),
-                business.getBusinessDescription(),
-                business.getTargetMarket(),
-                business.getMarketingGoals(),
-                business.getMonthlyProduction(),
-                products.toString(),
-                socialContext.toString(),
-                userContext.toString(),
-                request.getIdea()
-        );
+        ).stripIndent();
+    }
 
+    private String orDefault(String value, String fallback) {
+        return (value != null && !value.isBlank()) ? value : fallback;
     }
 
 }

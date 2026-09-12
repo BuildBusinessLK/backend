@@ -89,12 +89,19 @@ public class AuthUserService {
 
     @Transactional(readOnly = true)
     public UserProfileDto getProfile(Long userId) {
+        if (userId == null) {
+            throw new IllegalStateException("Authentication required");
+        }
         User user = userRepository.findById(userId).orElseThrow();
         return toDto(user);
     }
 
     @Transactional
     public UserProfileDto updateProfile(Long userId, ProfileUpdateRequest req) {
+        if (userId == null) {
+            throw new IllegalStateException("Authentication required");
+        }
+        ProfileUpdateRequest safeReq = req != null ? req : new ProfileUpdateRequest();
         User user = userRepository.findById(userId).orElseThrow();
         UserProfile profile = userProfileRepository.findByUser_Id(userId).orElseGet(() -> {
             UserProfile p = new UserProfile();
@@ -102,20 +109,20 @@ public class AuthUserService {
             p.setFullName("");
             return p;
         });
-        if (req.getFullName() != null) {
-            String n = req.getFullName().trim();
+        if (safeReq.getFullName() != null) {
+            String n = safeReq.getFullName().trim();
             if (!n.isEmpty()) {
                 profile.setFullName(n);
             }
         }
-        if (req.getPhone() != null) {
-            profile.setPhone(trimToNull(req.getPhone()));
+        if (safeReq.getPhone() != null) {
+            profile.setPhone(trimToNull(safeReq.getPhone()));
         }
-        if (req.getExperienceLevel() != null) {
-            profile.setExperienceLevel(trimToNull(req.getExperienceLevel()));
+        if (safeReq.getExperienceLevel() != null) {
+            profile.setExperienceLevel(trimToNull(safeReq.getExperienceLevel()));
         }
-        if (req.getPreferredLanguage() != null) {
-            profile.setPreferredLanguage(trimToNull(req.getPreferredLanguage()));
+        if (safeReq.getPreferredLanguage() != null) {
+            profile.setPreferredLanguage(trimToNull(safeReq.getPreferredLanguage()));
         }
         userProfileRepository.save(profile);
         return toDto(user);

@@ -2,6 +2,8 @@ package com.backend.service;
 
 import com.backend.dto.AdsGenerationRequest;
 import com.backend.dto.AdsGenerationResponse;
+import com.backend.dto.AdVisualRequest;
+import com.backend.dto.AdVisualResponse;
 import com.backend.dto.ai.AdGenerationRequest;
 import com.backend.dto.ai.AdGenerationResponse;
 import com.backend.dto.business.BusinessDetailDto;
@@ -39,6 +41,7 @@ public class AdsGenerationService {
     private final BusinessSocialLinkRepository businessSocialLinkRepository;
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
+    private final AdVisualService adVisualService;
 
     public AdsGenerationService(
             PromptBuilderService promptBuilderService,
@@ -47,7 +50,8 @@ public class AdsGenerationService {
             BusinessProfileRepository businessProfileRepository,
             BusinessSocialLinkRepository businessSocialLinkRepository,
             UserRepository userRepository,
-            UserProfileRepository userProfileRepository) {
+            UserProfileRepository userProfileRepository,
+            AdVisualService adVisualService) {
         this.promptBuilderService = promptBuilderService;
         this.aiClientService = aiClientService;
         this.businessRepository = businessRepository;
@@ -55,6 +59,35 @@ public class AdsGenerationService {
         this.businessSocialLinkRepository = businessSocialLinkRepository;
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
+        this.adVisualService = adVisualService;
+    }
+
+    /** Generates three professional visual formats while preserving the existing text-ad flow. */
+    public AdVisualResponse generateVisuals(AdVisualRequest request) {
+        Long userId = getCurrentUserId();
+        if (userId == null) throw new IllegalStateException("No authenticated user found");
+        BusinessDetailDto business = resolveBusinessContext(userId);
+        String prompt = buildVisualPrompt(request, business);
+        try {
+            Map<String, String> images = new LinkedHashMap<>();
+            images.put("facebook_linkedin", adVisualService.generate(prompt + " Landscape social-media ad composition; keep generous clear space for a headline. Do not render words in the image.", "1536x1024"));
+            images.put("instagram_whatsapp", adVisualService.generate(prompt + " Square social-media ad composition; keep generous clear space for a headline. Do not render words in the image.", "1024x1024"));
+            images.put("tiktok", adVisualService.generate(prompt + " Vertical short-video cover composition; keep generous clear space for a headline. Do not render words in the image.", "1024x1536"));
+            return new AdVisualResponse(images, "Visual ads generated for all platforms.");
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex.getMessage(), ex);
+        }
+    }
+
+    private String buildVisualPrompt(AdVisualRequest request, BusinessDetailDto business) {
+        String revision = request.getInstruction() == null || request.getInstruction().isBlank() ? "" : " Revision request: " + request.getInstruction();
+        return "Create a premium, realistic advertising visual for " + business.getBusinessName()
+                + ". Business sector: " + business.getSector()
+                + ". Business description: " + business.getBusinessDescription()
+                + ". Campaign idea: " + request.getIdea()
+                + ". Use a polished commercial photography or illustration style that suits the product/service and target audience."
+                + revision
+                + " No logos, no watermark, no readable text, no invented prices or claims.";
     }
 
     public AdsGenerationResponse generateAds(AdsGenerationRequest request) {
@@ -93,6 +126,10 @@ log.info("==================================");
 
             AdGenerationRequest aiRequest = new AdGenerationRequest();
             aiRequest.setPrompt(prompt);
+aiRequest.setIdea(request.getIdea());
+aiRequest.setTone(request.getTone());
+aiRequest.setPlatform(request.getPlatform());
+aiRequest.setWebsite(request.getWebsite());
 aiRequest.setBusinessProfile(buildBusinessProfilePayload(business));
 aiRequest.setUserProfile(userProfile);
 
@@ -102,17 +139,14 @@ log.info("Business Profile: {}", aiRequest.getBusinessProfile());
 log.info("User Profile: {}", aiRequest.getUserProfile());
 log.info("================================");
 
-AdGenerationResponse aiResponse = aiClientService.generateAdCopy(aiRequest);
-            String generatedAds = "";
-
-if(aiResponse != null){
-
-    generatedAds = aiResponse.getGeneratedAds();
-
-}
-
+            AdGenerationResponse aiResponse = aiClientService.generateAdCopy(aiRequest);
+System.out.println("============== AI RESPONSE ==============");
+System.out.println(aiResponse);
+System.out.println("Generated Ads:");
+System.out.println(aiResponse.getGeneratedAds());
+System.out.println("=========================================");
+            String generatedAds = extractGeneratedAds(aiResponse, request, business, userProfile);
             AdsGenerationResponse.ShareLinks shareLinks = generateShareLinks(generatedAds);
-
             return new AdsGenerationResponse(
                     prompt,
                     generatedAds,
@@ -232,21 +266,105 @@ if(aiResponse != null){
     return null;
 }
 
+    private String extractGeneratedAds(
+            AdGenerationResponse aiResponse,
+            AdsGenerationRequest request,
+            BusinessDetailDto business,
+            Map<String, Object> userProfile) {
+        if (aiResponse != null && aiResponse.getGeneratedAds() != null && !aiResponse.getGeneratedAds().isBlank()) {
+            return aiResponse.getGeneratedAds();
+        }
+
+        return buildFallbackAdCopy(request, business, userProfile);
+    }
+
+    private String buildFallbackAdCopy(
+            AdsGenerationRequest request,
+            BusinessDetailDto business,
+            Map<String, Object> userProfile) {
+        String businessName = business != null && business.getBusinessName() != null
+                ? business.getBusinessName()
+                : "your business";
+        String description = business != null && business.getBusinessDescription() != null
+                ? business.getBusinessDescription()
+                : "quality products and services";
+        String idea = (request.getIdea() != null && !request.getIdea().isBlank())
+                ? request.getIdea()
+                : "your offer";
+        String tone = (request.getTone() != null && !request.getTone().isBlank())
+                ? request.getTone()
+                : "professional";
+        String platform = (request.getPlatform() != null && !request.getPlatform().isBlank())
+                ? request.getPlatform()
+                : "social media";
+        String website = (request.getWebsite() != null && !request.getWebsite().isBlank())
+                ? request.getWebsite()
+                : "";
+        String ownerContext = userProfile != null && userProfile.get("fullName") != null
+                ? " for " + userProfile.get("fullName")
+                : "";
+        String websiteMention = website.isBlank() ? "" : " Visit " + website + " to learn more.";
+
+        return String.format("""
+Facebook Ad
+--------------------
+%s is ready to help you grow with %s.%s
+%s
+
+Instagram Caption
+--------------------
+%s is bringing a fresh idea to life with %s.%s
+Make it yours today and experience the difference.
+
+WhatsApp Advertisement
+--------------------
+Hi! We are %s and we are excited to share %s with you.%s
+Contact us today to get started.
+
+Headline Ideas
+--------------------
+- %s for %s
+- Discover %s today
+- Better solutions from %s
+- Trusted by customers in %s
+- A fresh approach to %s
+
+Hashtags
+--------------------
+#%s #BusinessGrowth #SME #Marketing #DigitalMarketing
+""",
+                businessName,
+                idea,
+                websiteMention,
+                description,
+                businessName,
+                idea,
+                websiteMention,
+                businessName,
+                idea,
+                websiteMention,
+                idea,
+                tone,
+                idea,
+                businessName,
+                platform,
+                businessName.replace(" ", "")
+        );
+    }
+
     private String generatePrompt(AdsGenerationRequest request) {
 
         StringBuilder prompt = new StringBuilder();
-
-        prompt.append("Create a creative advertisement for ");
 
         if (request.getIdea() != null) {
             prompt.append(request.getIdea());
         }
 
-        if (request.getProductType() != null && !request.getProductType().isBlank()) {
+        if (request.getProductType() != null && !((String) request.getProductType()).isBlank()) {
             prompt.append(". Product Type: ").append(request.getProductType());
         }
 
-        if (request.getTargetAudience() != null && !request.getTargetAudience().isBlank()) {
+        if (request.getTargetAudience() != null && !((String) request.getTargetAudience()).isBlank()) {
             prompt.append(". Target Audience: ").append(request.getTargetAudience());
         }
 

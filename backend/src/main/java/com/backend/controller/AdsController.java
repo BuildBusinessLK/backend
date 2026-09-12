@@ -2,6 +2,8 @@ package com.backend.controller;
 
 import com.backend.dto.AdsGenerationRequest;
 import com.backend.dto.AdsGenerationResponse;
+import com.backend.dto.AdVisualRequest;
+import com.backend.dto.AdVisualResponse;
 import com.backend.service.AdsGenerationService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -29,6 +31,11 @@ public class AdsController {
         log.info("Generating ads for idea: {}", request.getIdea());
         AdsGenerationResponse response = adsGenerationService.generateAds(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/visuals")
+    public ResponseEntity<AdVisualResponse> generateVisuals(@Valid @RequestBody AdVisualRequest request) {
+        return ResponseEntity.ok(adsGenerationService.generateVisuals(request));
     }
 
     /**
