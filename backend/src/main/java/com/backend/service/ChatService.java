@@ -128,6 +128,8 @@ public class ChatService {
         ChatSendResponse out = new ChatSendResponse();
         out.setMessage(text);
         out.setAction(action);
+        out.setType(aiResponse.getType());
+        out.setRecommendation(aiResponse.getRecommendation());
         out.setSessionId(session.getId());
         out.setMessageId(aiMsg.getId());
         return out;
@@ -153,18 +155,30 @@ public class ChatService {
         String guidance = response.getGuidance() == null ? "" : response.getGuidance().trim();
         String recommendation = response.getRecommendedBusiness() == null ? "" : response.getRecommendedBusiness().trim();
 
-        String userPrompt = "Which product suits me more?";
+        String userPrompt = "Which product suits my business profile best?";
         ChatMessage userMsg = new ChatMessage();
         userMsg.setSession(session);
         userMsg.setSender(ChatSender.USER);
         userMsg.setMessage(userPrompt);
         chatMessageRepository.save(userMsg);
 
-        String aiText = "**Recommended Business:** " + recommendation + "\n\n**Guidance:**\n" + guidance;
+        StringBuilder aiText = new StringBuilder();
+        if (!recommendation.isBlank()) {
+            aiText.append("**Recommended Product:** ").append(recommendation);
+            if (response.getRecommendations() != null && !response.getRecommendations().isEmpty()) {
+                aiText.append(" (").append(response.getRecommendations().get(0).getConfidence()).append("% Match)");
+            }
+            if (!guidance.isBlank()) {
+                aiText.append("\n\n**Guidance:**\n").append(guidance);
+            }
+        } else {
+            aiText.append(response.getMessage() != null ? response.getMessage() : "Unable to generate recommendation at this moment.");
+        }
+
         ChatMessage aiMsg = new ChatMessage();
         aiMsg.setSession(session);
         aiMsg.setSender(ChatSender.AI);
-        aiMsg.setMessage(aiText);
+        aiMsg.setMessage(aiText.toString());
         chatMessageRepository.save(aiMsg);
 
         response.setSessionId(session.getId());

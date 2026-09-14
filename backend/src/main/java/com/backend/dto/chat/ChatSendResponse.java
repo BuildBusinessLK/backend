@@ -1,11 +1,23 @@
 package com.backend.dto.chat;
 
+import com.backend.dto.ai.BusinessRecommendationResponse;
+
 public class ChatSendResponse {
 
+    private String type;
     private String message;
     private String action;
     private Long sessionId;
     private Long messageId;
+    private BusinessRecommendationResponse recommendation;
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 
     public String getMessage() {
         return message;
@@ -37,5 +49,13 @@ public class ChatSendResponse {
 
     public void setMessageId(Long messageId) {
         this.messageId = messageId;
+    }
+
+    public BusinessRecommendationResponse getRecommendation() {
+        return recommendation;
+    }
+
+    public void setRecommendation(BusinessRecommendationResponse recommendation) {
+        this.recommendation = recommendation;
     }
 }

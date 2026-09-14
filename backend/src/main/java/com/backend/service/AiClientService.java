@@ -104,18 +104,19 @@ public class AiClientService {
         try {
             BusinessRecommendationResponse body = restTemplate.postForObject(recommendationUrl, entity, BusinessRecommendationResponse.class);
             if (body == null) {
-                BusinessRecommendationResponse fallback = new BusinessRecommendationResponse();
-                fallback.setMessage("AI service returned empty recommendation");
-                return fallback;
+                throw new IllegalStateException("AI recommendation service returned an empty response.");
             }
             return body;
+        } catch (HttpStatusCodeException e) {
+            log.warn("AI recommendation service at {} responded with HTTP {}: {}", recommendationUrl, e.getStatusCode(), e.getResponseBodyAsString());
+            BusinessRecommendationResponse errResponse = new BusinessRecommendationResponse();
+            errResponse.setMessage("Unable to generate recommendation at this moment (HTTP " + e.getStatusCode().value() + "). Please try again shortly.");
+            return errResponse;
         } catch (Exception ex) {
-            log.warn("AI service recommendation request failed: {}", ex.getMessage());
-            BusinessRecommendationResponse fallback = new BusinessRecommendationResponse();
-            fallback.setRecommendedBusiness("Value-Added Production");
-            fallback.setGuidance("Focus on value-added processing for higher margins in your local sector. Optimize production yield and target local retail and export opportunities.");
-            fallback.setMessage("Operating with standard SME business guidance.");
-            return fallback;
+            log.warn("AI recommendation service request failed: {}", ex.getMessage());
+            BusinessRecommendationResponse errResponse = new BusinessRecommendationResponse();
+            errResponse.setMessage("The AI recommendation service is currently unreachable. If the service is waking up, please wait a moment and try again.");
+            return errResponse;
         }
     }
 }
