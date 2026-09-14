@@ -82,11 +82,23 @@ public class AuthUserService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String email = request.getEmail().trim().toLowerCase();
-        if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new IllegalStateException("An account with this email already exists.");
-        }
-
         String otp = String.format("%06d", new java.util.Random().nextInt(1000000));
+
+        User existingUser = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (existingUser != null) {
+            if (existingUser.getEmailVerified()) {
+                throw new IllegalStateException("An account with this email already exists.");
+            }
+            existingUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            existingUser.setVerificationOtp(otp);
+            existingUser.setOtpExpiry(LocalDateTime.now().plusMinutes(15));
+            UserProfile profile = userProfileRepository.findByUser_Id(existingUser.getId()).orElseThrow();
+            profile.setFullName(request.getFullName().trim());
+            userRepository.save(existingUser);
+            userProfileRepository.save(profile);
+            sendOtpEmail(email, otp);
+            return createAuthResponse(existingUser);
+        }
 
         User user = new User();
         user.setEmail(email);
@@ -105,6 +117,10 @@ public class AuthUserService {
 
         sendOtpEmail(email, otp);
 
+        return createAuthResponse(user);
+    }
+
+    private AuthResponse createAuthResponse(User user) {
         String token = jwtService.generateToken(user);
         AuthResponse res = new AuthResponse();
         res.setToken(token);
