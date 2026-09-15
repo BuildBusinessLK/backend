@@ -48,6 +48,7 @@ public class AuthUserService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final JavaMailSender mailSender;
+    private final ResendEmailClient resendEmailClient;
     private final RestTemplate restTemplate;
 
     @Value("${google.client.id:558034937251-f6ii8p6fb0iar9gmkm9rqdic27mesas1.apps.googleusercontent.com}")
@@ -69,6 +70,7 @@ public class AuthUserService {
             JwtService jwtService,
             AuthenticationManager authenticationManager,
             ObjectProvider<JavaMailSender> mailSender,
+            ResendEmailClient resendEmailClient,
             RestTemplate restTemplate) {
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
@@ -76,6 +78,7 @@ public class AuthUserService {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.mailSender = mailSender.getIfAvailable();
+        this.resendEmailClient = resendEmailClient;
         this.restTemplate = restTemplate;
     }
 
@@ -325,17 +328,27 @@ public class AuthUserService {
 
     private void sendOtpEmail(String email, String otp) {
         log.info("[EMAIL VERIFICATION] Verification OTP for {}: {}", email, otp);
+        String subject = appName + ": Your Email Verification Code";
+        String body = "Welcome to " + appName + "!\n\n"
+                + "Your 6-digit verification code is: " + otp + "\n\n"
+                + "This code is valid for 15 minutes.\n\n"
+                + "Sign in to your account at: " + clientUrl + "\n\n"
+                + "Thank you,\n" + appName + " Team";
+
+        // Try Resend first (works on Render free tier via HTTPS)
+        if (resendEmailClient.isConfigured()) {
+            resendEmailClient.sendPlainText(email, subject, body);
+            return;
+        }
+
+        // Fallback: SMTP (works locally, blocked on Render free tier)
         if (mailSender != null) {
             try {
                 SimpleMailMessage msg = new SimpleMailMessage();
                 msg.setFrom(mailFrom);
                 msg.setTo(email);
-                msg.setSubject(appName + ": Your Email Verification Code");
-                msg.setText("Welcome to " + appName + "!\n\n"
-                        + "Your 6-digit verification code is: " + otp + "\n\n"
-                        + "This code is valid for 15 minutes.\n\n"
-                        + "Sign in to your account at: " + clientUrl + "\n\n"
-                        + "Thank you,\n" + appName + " Team");
+                msg.setSubject(subject);
+                msg.setText(body);
                 mailSender.send(msg);
             } catch (Exception ex) {
                 log.warn("Could not send verification email via SMTP: {}. Verification code is logged above for dev testing.", ex.getMessage());
@@ -354,18 +367,29 @@ public class AuthUserService {
             user.setOtpExpiry(LocalDateTime.now().plusMinutes(30));
             userRepository.save(user);
             log.info("[PASSWORD RESET] Reset code for {}: {}", cleanEmail, otp);
+
+            String subject = appName + ": Password Reset Code";
+            String body = "Hello,\n\n"
+                    + "You requested a password reset for your " + appName + " account.\n\n"
+                    + "Your reset code is: " + otp + "\n\n"
+                    + "Access your account at: " + clientUrl + "\n\n"
+                    + "If you did not request this, please ignore this email.\n\n"
+                    + "Best regards,\n" + appName + " Team";
+
+            // Try Resend first
+            if (resendEmailClient.isConfigured()) {
+                resendEmailClient.sendPlainText(cleanEmail, subject, body);
+                return;
+            }
+
+            // Fallback: SMTP
             if (mailSender != null) {
                 try {
                     SimpleMailMessage msg = new SimpleMailMessage();
                     msg.setFrom(mailFrom);
                     msg.setTo(cleanEmail);
-                    msg.setSubject(appName + ": Password Reset Code");
-                    msg.setText("Hello,\n\n"
-                            + "You requested a password reset for your " + appName + " account.\n\n"
-                            + "Your reset code is: " + otp + "\n\n"
-                            + "Access your account at: " + clientUrl + "\n\n"
-                            + "If you did not request this, please ignore this email.\n\n"
-                            + "Best regards,\n" + appName + " Team");
+                    msg.setSubject(subject);
+                    msg.setText(body);
                     mailSender.send(msg);
                 } catch (Exception ex) {
                     log.warn("Could not send password reset email: {}", ex.getMessage());

@@ -58,6 +58,7 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private final JavaMailSender mailSender;
+    private final ResendEmailClient resendEmailClient;
     private final String mailHost;
     private final String fromAddress;
     private final AiHordeService aiHordeService;
@@ -71,6 +72,7 @@ public class EmailService {
             CustomerRepository customerRepository,
             @Value("${spring.mail.host:}") String mailHost,
             @Value("${app.mail.from:}") String fromAddress,
+            ResendEmailClient resendEmailClient,
             AiHordeService aiHordeService) {
         this.mailSender = mailSender.getIfAvailable();
         this.businessRepository = businessRepository;
@@ -80,6 +82,7 @@ public class EmailService {
         this.customerRepository = customerRepository;
         this.mailHost = mailHost;
         this.fromAddress = fromAddress;
+        this.resendEmailClient = resendEmailClient;
         this.aiHordeService = aiHordeService;
     }
     
@@ -530,6 +533,13 @@ Return JSON only.
     }
 
     private void sendSingleEmail(String recipient, String subject, String body) {
+        // Try Resend first (works on Render free tier via HTTPS/443)
+        if (resendEmailClient.isConfigured()) {
+            resendEmailClient.sendPlainText(recipient, subject, body);
+            return;
+        }
+
+        // Fallback: SMTP
         try {
             String resolvedFrom = fromAddress == null ? "" : fromAddress.trim();
             MimeMessage message = mailSender.createMimeMessage();
@@ -538,7 +548,6 @@ Return JSON only.
             helper.setTo(recipient);
             helper.setSubject(subject);
             helper.setText(body, false);
-
             mailSender.send(message);
             log.info("Sent email to {} with subject {}", recipient, subject);
         } catch (MessagingException ex) {
@@ -558,10 +567,11 @@ Return JSON only.
     }
 
     private boolean isMailConfigured() {
-        return mailSender != null
-            && mailHost != null
-            && !mailHost.isBlank()
-            && fromAddress != null
-            && !fromAddress.isBlank();
+        return resendEmailClient.isConfigured()
+            || (mailSender != null
+                && mailHost != null
+                && !mailHost.isBlank()
+                && fromAddress != null
+                && !fromAddress.isBlank());
     }
 }
