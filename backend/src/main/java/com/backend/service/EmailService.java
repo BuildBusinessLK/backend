@@ -576,9 +576,9 @@ Return JSON only.
             helper.setText(body, htmlText);
             mailSender.send(message);
             log.info("Sent rich HTML email to {} with subject {}", recipient, subject);
-        } catch (MessagingException ex) {
+        } catch (MessagingException | java.io.UnsupportedEncodingException ex) {
             throw new IllegalStateException("Failed to create email message for recipient " + recipient + ": " + ex.getMessage(), ex);
-        } catch (RuntimeException ex) {
+        } catch (Exception ex) {
             throw new IllegalStateException("Failed to send email to " + recipient + ": " + ex.getMessage(), ex);
         }
     }
