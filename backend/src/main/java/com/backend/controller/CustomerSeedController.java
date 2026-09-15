@@ -73,24 +73,15 @@ public class CustomerSeedController {
             "Dias", "Cooray", "Rodrigo", "Mendis", "Peiris", "Liyanage", "Darmasena"
         };
 
-        // Sector-specific product categories
+        // Sector-specific product categories strictly for supported domains
         String[] categories;
-        if (sector == Sector.COCONUT) {
-            categories = new String[]{"Coconut Oil", "Coconut Flour", "Coconut Milk", "Desiccated Coconut", "Coconut Shell Crafts"};
-        } else if (sector == Sector.KITHUL) {
-            categories = new String[]{"Kithul Treacle", "Kithul Jaggery", "Kithul Flour", "Kithul Fiber Crafts"};
+        if (sector == Sector.KITHUL) {
+            categories = new String[]{"Pure Kithul Treacle", "Kithul Jaggery", "Kithul Flour", "Kithul Nectar Syrup"};
         } else if (sector == Sector.PALMYRAH) {
-            categories = new String[]{"Palmyrah Jaggery", "Palmyrah Baskets", "Palmyrah Hand Fans", "Palmyrah Root Flour"};
-        } else if (sector == Sector.FOOD_BEVERAGE) {
-            categories = new String[]{"Ceylon Tea", "Local Sweets", "Organic Pickles", "Fruit Juice", "Spices"};
-        } else if (sector == Sector.AGRICULTURE) {
-            categories = new String[]{"Organic Vegetables", "Plant Pots", "Fertilizers", "Farming Seeds", "Farming Tools"};
-        } else if (sector == Sector.HANDICRAFTS) {
-            categories = new String[]{"Wooden Masks", "Clay Pottery", "Brass Ornaments", "Handloom Sarees", "Batik Clothing"};
-        } else if (sector == Sector.RETAIL) {
-            categories = new String[]{"Grocery Items", "Stationery", "Clothing accessories", "Household products"};
+            categories = new String[]{"Palmyrah (Thal) Jaggery", "Palmyrah Sugar Candy", "Palmyrah Treacle", "Palmyrah Odiyal Flour", "Palmyrah Pinattu"};
         } else {
-            categories = new String[]{"SME Gift Items", "Handmade Soap", "Eco-friendly Bags", "Handicrafts"};
+            // Default and COCONUT
+            categories = new String[]{"Virgin Coconut Oil", "Coconut Flour", "Coconut Milk", "Desiccated Coconut", "Toasted Coconut Chips"};
         }
 
         int targetCount = 35 + rand.nextInt(15); // Generates between 35 and 50 customers
