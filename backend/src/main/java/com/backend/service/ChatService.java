@@ -27,6 +27,7 @@ public class ChatService {
     private final BusinessProfileRepository businessProfileRepository;
     private final BusinessProductRepository businessProductRepository;
     private final BusinessSocialLinkRepository businessSocialLinkRepository;
+    private final BusinessDocumentRepository businessDocumentRepository;
     private final AiClientService aiClientService;
     private final AssistantActionDetector assistantActionDetector;
 
@@ -39,6 +40,7 @@ public class ChatService {
             BusinessProfileRepository businessProfileRepository,
             BusinessProductRepository businessProductRepository,
             BusinessSocialLinkRepository businessSocialLinkRepository,
+            BusinessDocumentRepository businessDocumentRepository,
             AiClientService aiClientService,
             AssistantActionDetector assistantActionDetector) {
         this.chatSessionRepository = chatSessionRepository;
@@ -49,6 +51,7 @@ public class ChatService {
         this.businessProfileRepository = businessProfileRepository;
         this.businessProductRepository = businessProductRepository;
         this.businessSocialLinkRepository = businessSocialLinkRepository;
+        this.businessDocumentRepository = businessDocumentRepository;
         this.aiClientService = aiClientService;
         this.assistantActionDetector = assistantActionDetector;
     }
@@ -292,6 +295,20 @@ public class ChatService {
                 })
                 .toList();
         root.put("socialLinks", social);
+
+        List<Map<String, Object>> docs = businessDocumentRepository.findByUser_IdOrderByCreatedAtDesc(userId).stream()
+                .map(d -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("fileName", d.getFileName());
+                    m.put("category", d.getCategory() != null ? d.getCategory().name() : "GENERAL");
+                    m.put("description", d.getDescription());
+                    if (d.getExtractedText() != null && !d.getExtractedText().isBlank()) {
+                        m.put("contentSummary", d.getExtractedText());
+                    }
+                    return m;
+                })
+                .toList();
+        root.put("documents", docs);
 
         return root;
     }

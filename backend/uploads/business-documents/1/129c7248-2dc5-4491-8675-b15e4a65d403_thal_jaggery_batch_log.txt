@@ -1,0 +1,48 @@
+THAL (PALMYRAH) JAGGERY - BATCH RECIPE & QUALITY LOG
+Producer Location: Jaffna, Northern Province
+Month: August 2026
+
+Batch No: TJ-2608-01
+Sap Boiled (L): 60
+Boiling Start Time: 05:30 AM
+Boiling Duration (hrs): 3.5
+Solid Jaggery Yield (kg): 9.2
+Wood Fuel Used (kg): 22
+Wood Fuel Cost (LKR): 1320
+Quality Notes: Golden brown, firm set, mild caramel aroma. No crystallization issues.
+
+Batch No: TJ-2608-02
+Sap Boiled (L): 55
+Boiling Start Time: 05:45 AM
+Boiling Duration (hrs): 3.25
+Solid Jaggery Yield (kg): 8.4
+Wood Fuel Used (kg): 20
+Wood Fuel Cost (LKR): 1200
+Quality Notes: Slightly softer set, boiled 15 mins less than usual. Taste unaffected.
+
+Batch No: TJ-2608-03
+Sap Boiled (L): 65
+Boiling Start Time: 05:30 AM
+Boiling Duration (hrs): 3.75
+Solid Jaggery Yield (kg): 10.1
+Wood Fuel Used (kg): 24
+Wood Fuel Cost (LKR): 1440
+Quality Notes: Excellent batch, dark amber color, sold as premium grade.
+
+Batch No: TJ-2608-04
+Sap Boiled (L): 58
+Boiling Start Time: 06:00 AM
+Boiling Duration (hrs): 3.4
+Solid Jaggery Yield (kg): 8.9
+Wood Fuel Used (kg): 21
+Wood Fuel Cost (LKR): 1260
+Quality Notes: Standard grade, minor smoky aftertaste from wet fuel.
+
+Batch No: TJ-2608-05
+Sap Boiled (L): 62
+Boiling Start Time: 05:30 AM
+Boiling Duration (hrs): 3.6
+Solid Jaggery Yield (kg): 9.6
+Wood Fuel Used (kg): 23
+Wood Fuel Cost (LKR): 1380
+Quality Notes: Good set, consistent with batch 01. Packed in 500g blocks.
