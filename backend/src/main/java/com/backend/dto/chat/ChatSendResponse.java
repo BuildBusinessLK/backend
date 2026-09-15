@@ -10,6 +10,7 @@ public class ChatSendResponse {
     private Long sessionId;
     private Long messageId;
     private BusinessRecommendationResponse recommendation;
+    private java.util.Map<String, Object> emailCampaign;
 
     public String getType() {
         return type;
@@ -57,5 +58,13 @@ public class ChatSendResponse {
 
     public void setRecommendation(BusinessRecommendationResponse recommendation) {
         this.recommendation = recommendation;
+    }
+
+    public java.util.Map<String, Object> getEmailCampaign() {
+        return emailCampaign;
+    }
+
+    public void setEmailCampaign(java.util.Map<String, Object> emailCampaign) {
+        this.emailCampaign = emailCampaign;
     }
 }

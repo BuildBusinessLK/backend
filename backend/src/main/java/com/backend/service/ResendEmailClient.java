@@ -111,6 +111,6 @@ public class ResendEmailClient {
     }
 
     public boolean isConfigured() {
-        return apiKey != null && !apiKey.isBlank();
+        return apiKey != null && !apiKey.isBlank() && apiKey.startsWith("re_");
     }
 }

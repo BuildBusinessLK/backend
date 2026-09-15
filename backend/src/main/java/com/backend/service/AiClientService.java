@@ -8,6 +8,8 @@ import com.backend.dto.ai.BusinessRecommendationRequest;
 import com.backend.dto.ai.BusinessRecommendationResponse;
 import com.backend.dto.ai.WebsiteCopyRequest;
 import com.backend.dto.ai.WebsiteCopyResponse;
+import com.backend.dto.email.EmailGenerateRequest;
+import com.backend.dto.email.EmailGenerateResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +39,9 @@ public class AiClientService {
 
     @Value("${ai.service.recommendation-url:http://localhost:8000/business-advisor}")
     private String recommendationUrl;
+
+    @Value("${ai.service.email-generate-url:http://localhost:8000/email-generate}")
+    private String emailGenerateUrl;
 
     public AiClientService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -119,4 +124,50 @@ public class AiClientService {
             return errResponse;
         }
     }
+
+    public EmailGenerateResponse generateEmail(EmailGenerateRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<EmailGenerateRequest> entity = new HttpEntity<>(request, headers);
+        try {
+            EmailGenerateResponse body = restTemplate.postForObject(emailGenerateUrl, entity, EmailGenerateResponse.class);
+            if (body == null || body.getSubject() == null || body.getBody() == null) {
+                throw new IllegalStateException("AI service returned empty email response");
+            }
+            return body;
+        } catch (Exception ex) {
+            log.warn("AI email generation failed at {}: {}", emailGenerateUrl, ex.getMessage());
+            String comp = (request.getCompanyName() != null && !request.getCompanyName().isBlank()) ? request.getCompanyName() : "Lanka Value Agribusiness";
+            String sec = (request.getSector() != null && !request.getSector().isBlank()) ? request.getSector() : "Coconut";
+            String prod = (request.getProductName() != null && !request.getProductName().isBlank()) ? request.getProductName() : ("Premium " + sec + " Products");
+            String user = (request.getUserName() != null && !request.getUserName().isBlank()) ? request.getUserName() : "Commercial Sales Director";
+            String phone = (request.getContactPhone() != null && !request.getContactPhone().isBlank()) ? request.getContactPhone() : "+94 77 123 4567";
+            String email = (request.getContactEmail() != null && !request.getContactEmail().isBlank()) ? request.getContactEmail() : "inquiry@buildbusinesslk.com";
+
+            String subject = "Commercial Supply Inquiry: Export-Grade " + prod + " – " + comp;
+            String body = "Dear Commercial Partner,\n\n"
+                    + "I hope this email finds you well.\n\n"
+                    + "I am reaching out on behalf of " + comp + ", a verified producer in the Sri Lankan " + sec + " sector. "
+                    + "We are pleased to introduce our current commercial batch of " + prod + ", processed in strict adherence to hygienic standards.\n\n"
+                    + "Commercial Specification Highlights:\n"
+                    + "• 100% authentic Sri Lankan farmgate origin with full batch traceability\n"
+                    + "• Consistent grading and purity suitable for bulk export and retail packaging\n"
+                    + "• Low initial Minimum Order Quantity (MOQ) for commercial evaluation\n\n"
+                    + "We would welcome the opportunity to provide technical specifications and sample packs for your evaluation.\n\n"
+                    + "Could we arrange a brief call or may I send over our wholesale pricing catalog this week?\n\n"
+                    + "Kind regards,\n\n"
+                    + user + "\n"
+                    + comp + "\n"
+                    + "Tel: " + phone + "\n"
+                    + "Email: " + email;
+
+            return new EmailGenerateResponse(
+                    subject,
+                    body,
+                    "Request wholesale technical specification and sample pack",
+                    "Targeting EDB Registered Exporters & Wholesale Distributors"
+            );
+        }
+    }
 }
+

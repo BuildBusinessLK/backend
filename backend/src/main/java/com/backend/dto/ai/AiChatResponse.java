@@ -12,6 +12,7 @@ public class AiChatResponse {
     private String message;
 
     private BusinessRecommendationResponse recommendation;
+    private java.util.Map<String, Object> emailCampaign;
 
     public String getType() {
         return type;
@@ -45,5 +46,13 @@ public class AiChatResponse {
 
     public void setRecommendation(BusinessRecommendationResponse recommendation) {
         this.recommendation = recommendation;
+    }
+
+    public java.util.Map<String, Object> getEmailCampaign() {
+        return emailCampaign;
+    }
+
+    public void setEmailCampaign(java.util.Map<String, Object> emailCampaign) {
+        this.emailCampaign = emailCampaign;
     }
 }

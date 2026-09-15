@@ -62,6 +62,7 @@ public class EmailService {
     private final String mailHost;
     private final String fromAddress;
     private final AiHordeService aiHordeService;
+    private final AiClientService aiClientService;
 
     public EmailService(
             ObjectProvider<JavaMailSender> mailSender,
@@ -73,7 +74,8 @@ public class EmailService {
             @Value("${spring.mail.host:}") String mailHost,
             @Value("${app.mail.from:}") String fromAddress,
             ResendEmailClient resendEmailClient,
-            AiHordeService aiHordeService) {
+            AiHordeService aiHordeService,
+            AiClientService aiClientService) {
         this.mailSender = mailSender.getIfAvailable();
         this.businessRepository = businessRepository;
         this.businessProfileRepository = businessProfileRepository;
@@ -84,6 +86,7 @@ public class EmailService {
         this.fromAddress = fromAddress;
         this.resendEmailClient = resendEmailClient;
         this.aiHordeService = aiHordeService;
+        this.aiClientService = aiClientService;
     }
     
     /**
@@ -337,6 +340,25 @@ public class EmailService {
     }
 
     private EmailContent generateEmailWithAI(EmailGenerationRequest request) throws Exception {
+        try {
+            com.backend.dto.email.EmailGenerateRequest aiReq = new com.backend.dto.email.EmailGenerateRequest();
+            aiReq.setGoal("GENERAL_ANNOUNCEMENT");
+            aiReq.setCompanyName(request.getCompanyName());
+            aiReq.setUserName(request.getUserName());
+            aiReq.setSector(request.getIndustry());
+            aiReq.setTargetAudience(request.getTargetAudience());
+            aiReq.setTone(request.getTone());
+            aiReq.setKeyOffer(request.getIdea());
+            aiReq.setIdea(request.getIdea());
+
+            com.backend.dto.email.EmailGenerateResponse resp = aiClientService.generateEmail(aiReq);
+            if (resp != null && resp.getSubject() != null && !resp.getSubject().isBlank() && resp.getBody() != null && !resp.getBody().isBlank()) {
+                return new EmailContent(resp.getSubject(), resp.getBody());
+            }
+        } catch (Exception ex) {
+            log.warn("FastAPI email generation call encountered exception, trying fallback: {}", ex.getMessage());
+        }
+
         ObjectMapper mapper = new ObjectMapper();
 
 String systemPrompt =
@@ -533,28 +555,125 @@ Return JSON only.
     }
 
     private void sendSingleEmail(String recipient, String subject, String body) {
+        String resolvedFrom = (fromAddress != null && !fromAddress.isBlank() && !fromAddress.contains("resend.dev"))
+                ? fromAddress.trim()
+                : "havindufonseka@gmail.com";
+        String htmlText = buildHtmlCard(subject, body, resolvedFrom);
+
         // Try Resend first (works on Render free tier via HTTPS/443)
         if (resendEmailClient.isConfigured()) {
-            resendEmailClient.sendPlainText(recipient, subject, body);
-            return;
+            boolean ok = resendEmailClient.sendHtml(recipient, subject, htmlText);
+            if (ok) return;
         }
 
         // Fallback: SMTP
         try {
-            String resolvedFrom = fromAddress == null ? "" : fromAddress.trim();
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
-            helper.setFrom(resolvedFrom);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+            helper.setFrom(resolvedFrom, "BuildBusinessLK Platform");
             helper.setTo(recipient);
             helper.setSubject(subject);
-            helper.setText(body, false);
+            helper.setText(body, htmlText);
             mailSender.send(message);
-            log.info("Sent email to {} with subject {}", recipient, subject);
+            log.info("Sent rich HTML email to {} with subject {}", recipient, subject);
         } catch (MessagingException ex) {
             throw new IllegalStateException("Failed to create email message for recipient " + recipient + ": " + ex.getMessage(), ex);
         } catch (RuntimeException ex) {
             throw new IllegalStateException("Failed to send email to " + recipient + ": " + ex.getMessage(), ex);
         }
+    }
+
+    private String buildHtmlCard(String subject, String body, String fromEmail) {
+        StringBuilder formattedContent = new StringBuilder();
+        String[] lines = body.split("\n");
+        boolean inList = false;
+
+        for (String rawLine : lines) {
+            String line = rawLine.trim();
+            if (line.isEmpty()) {
+                if (inList) {
+                    formattedContent.append("</ul>\n");
+                    inList = false;
+                }
+                continue;
+            }
+
+            if (line.startsWith("•") || line.startsWith("-") || line.startsWith("*")) {
+                if (!inList) {
+                    formattedContent.append("<ul style=\"margin: 12px 0; padding-left: 20px; color: #334155;\">\n");
+                    inList = true;
+                }
+                String itemText = line.substring(1).trim();
+                formattedContent.append("<li style=\"margin-bottom: 6px; font-size: 14px; line-height: 1.6;\">")
+                        .append(escapeHtml(itemText))
+                        .append("</li>\n");
+            } else {
+                if (inList) {
+                    formattedContent.append("</ul>\n");
+                    inList = false;
+                }
+                formattedContent.append("<p style=\"margin: 0 0 14px 0; font-size: 14px; line-height: 1.7; color: #1e293b;\">")
+                        .append(escapeHtml(line))
+                        .append("</p>\n");
+            }
+        }
+        if (inList) {
+            formattedContent.append("</ul>\n");
+        }
+
+        return """
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+    .container { max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+    .header { background: linear-gradient(135deg, #0284c7, #0ea5e9); padding: 28px 24px; text-align: center; color: #ffffff; }
+    .header h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #ffffff; }
+    .header p { margin: 6px 0 0 0; font-size: 13px; opacity: 0.92; color: #e0f2fe; }
+    .content { padding: 28px 24px; background: #ffffff; }
+    .cta-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 18px; margin: 20px 0 10px 0; text-align: center; }
+    .cta-btn { display: inline-block; padding: 12px 24px; background: #0284c7; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; }
+    .footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>%s</h1>
+      <p>BuildBusinessLK &bull; Commercial Outreach Platform</p>
+    </div>
+    <div class="content">
+      %s
+      <div class="cta-box">
+        <p style="margin: 0 0 10px 0; font-size: 13px; color: #0369a1; font-weight: 700;">Have questions or need more details?</p>
+        <a href="mailto:%s?subject=Re: %s" class="cta-btn">Reply to this Message</a>
+      </div>
+    </div>
+    <div class="footer">
+      Sent via BuildBusinessLK &bull; Sri Lankan MSME Agribusiness Platform<br>
+      Authorized recipients: havindufonseka@gmail.com &bull; havinduhesara21@gmail.com
+    </div>
+  </div>
+</body>
+</html>
+""".formatted(
+            escapeHtml(subject),
+            formattedContent.toString(),
+            escapeHtml(fromEmail),
+            escapeHtml(subject)
+        );
+    }
+
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                   .replace("<", "&lt;")
+                   .replace(">", "&gt;")
+                   .replace("\"", "&quot;")
+                   .replace("'", "&#39;");
     }
 
     private void logLocalDelivery(String recipient, String subject, String body) {

@@ -130,6 +130,7 @@ public class ChatService {
         out.setAction(action);
         out.setType(aiResponse.getType());
         out.setRecommendation(aiResponse.getRecommendation());
+        out.setEmailCampaign(aiResponse.getEmailCampaign());
         out.setSessionId(session.getId());
         out.setMessageId(aiMsg.getId());
         return out;
