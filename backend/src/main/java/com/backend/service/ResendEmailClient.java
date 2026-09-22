@@ -36,6 +36,18 @@ public class ResendEmailClient {
     @Value("${app.mail.from:onboarding@resend.dev}")
     private String fromAddress;
 
+    private String resolveFrom() {
+        if (fromAddress == null || fromAddress.isBlank()) {
+            return "BuildBusinessLK <onboarding@resend.dev>";
+        }
+        String lower = fromAddress.trim().toLowerCase();
+        // Public email domains cannot be verified on Resend and trigger a 403 validation error
+        if (lower.endsWith("@gmail.com") || lower.endsWith("@yahoo.com") || lower.endsWith("@outlook.com") || lower.endsWith("@hotmail.com")) {
+            return "BuildBusinessLK <onboarding@resend.dev>";
+        }
+        return fromAddress.trim();
+    }
+
     public boolean sendPlainText(String to, String subject, String text) {
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("[ResendEmailClient] No RESEND_API_KEY — logging locally.");
@@ -45,7 +57,7 @@ public class ResendEmailClient {
         try {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode payload = mapper.createObjectNode();
-            payload.put("from", fromAddress);
+            payload.put("from", resolveFrom());
             ArrayNode toArray = mapper.createArrayNode();
             toArray.add(to);
             payload.set("to", toArray);
@@ -82,7 +94,7 @@ public class ResendEmailClient {
         try {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode payload = mapper.createObjectNode();
-            payload.put("from", fromAddress);
+            payload.put("from", resolveFrom());
             ArrayNode toArray = mapper.createArrayNode();
             toArray.add(to);
             payload.set("to", toArray);
