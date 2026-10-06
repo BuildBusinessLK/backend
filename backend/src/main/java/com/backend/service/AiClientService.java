@@ -21,6 +21,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 @Service
 public class AiClientService {
 
@@ -89,15 +91,24 @@ public class AiClientService {
         HttpEntity<AdGenerationRequest> entity = new HttpEntity<>(request, headers);
         try {
             AdGenerationResponse body = restTemplate.postForObject(adGenerationUrl, entity, AdGenerationResponse.class);
-            if (body == null || body.getGeneratedAds() == null || body.getGeneratedAds().isBlank()) {
+            if (body == null || ((body.getGeneratedAds() == null || body.getGeneratedAds().isBlank()) && (body.getCaption() == null || body.getCaption().isBlank()))) {
                 AdGenerationResponse fallback = new AdGenerationResponse();
                 fallback.setGeneratedAds("We could not retrieve a full AI draft right now, but your campaign brief is ready to use.");
+                fallback.setCaption("Discover quality products and services tailored for you.");
+                fallback.setHeadline("Quality Sri Lankan Business");
+                fallback.setCallToAction("Connect with us today!");
+                fallback.setHashtags(List.of("#SriLankanBusiness", "#CeylonQuality"));
                 return fallback;
             }
             return body;
         } catch (Exception ex) {
+            log.warn("AI ad generation request to {} failed: {}", adGenerationUrl, ex.getMessage());
             AdGenerationResponse fallback = new AdGenerationResponse();
             fallback.setGeneratedAds("We could not retrieve a full AI draft right now, but your campaign brief is ready to use.");
+            fallback.setCaption("Discover quality products and services tailored for you.");
+            fallback.setHeadline("Quality Sri Lankan Business");
+            fallback.setCallToAction("Connect with us today!");
+            fallback.setHashtags(List.of("#SriLankanBusiness", "#CeylonQuality"));
             return fallback;
         }
     }

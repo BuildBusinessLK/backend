@@ -11,9 +11,13 @@ import com.backend.dto.business.BusinessSocialLinkDto;
 import com.backend.entity.Business;
 import com.backend.entity.User;
 import com.backend.entity.UserProfile;
+import com.backend.dto.social.SocialGenerateRequest;
+import com.backend.dto.social.SocialGenerateResponse;
+import com.backend.entity.SocialPost;
 import com.backend.repository.BusinessProfileRepository;
 import com.backend.repository.BusinessRepository;
 import com.backend.repository.BusinessSocialLinkRepository;
+import com.backend.repository.SocialPostRepository;
 import com.backend.repository.UserProfileRepository;
 import com.backend.repository.UserRepository;
 import com.backend.security.CustomUserDetails;
@@ -25,6 +29,8 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +48,8 @@ public class AdsGenerationService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final AdVisualService adVisualService;
+    private final CloudinaryStorageService cloudinaryStorageService;
+    private final SocialPostRepository socialPostRepository;
 
     public AdsGenerationService(
             PromptBuilderService promptBuilderService,
@@ -51,7 +59,9 @@ public class AdsGenerationService {
             BusinessSocialLinkRepository businessSocialLinkRepository,
             UserRepository userRepository,
             UserProfileRepository userProfileRepository,
-            AdVisualService adVisualService) {
+            AdVisualService adVisualService,
+            CloudinaryStorageService cloudinaryStorageService,
+            SocialPostRepository socialPostRepository) {
         this.promptBuilderService = promptBuilderService;
         this.aiClientService = aiClientService;
         this.businessRepository = businessRepository;
@@ -60,6 +70,8 @@ public class AdsGenerationService {
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
         this.adVisualService = adVisualService;
+        this.cloudinaryStorageService = cloudinaryStorageService;
+        this.socialPostRepository = socialPostRepository;
     }
 
     /** Generates three professional visual formats while preserving the existing text-ad flow. */
@@ -441,5 +453,113 @@ Hashtags
                     ""
             );
         }
+    }
+
+    public SocialGenerateResponse generateSocialMarketingPost(SocialGenerateRequest request, boolean generateImage) {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            throw new IllegalStateException("No authenticated user found");
+        }
+
+        Business business = businessRepository.findByOwner_Id(userId).stream().findFirst().orElseThrow(
+                () -> new IllegalStateException("No business found for the current user")
+        );
+
+        BusinessDetailDto businessDto = resolveBusinessContext(userId);
+        Map<String, Object> userProfile = resolveUserProfileContext(userId);
+
+        AdGenerationRequest aiRequest = new AdGenerationRequest();
+        aiRequest.setPrompt(request.getPrompt() != null ? request.getPrompt() : "");
+        aiRequest.setIdea(request.getIdea());
+        aiRequest.setTone(request.getTone());
+        aiRequest.setPlatform(request.getPlatform());
+        aiRequest.setBusinessProfile(buildBusinessProfilePayload(businessDto));
+        aiRequest.setUserProfile(userProfile);
+
+        log.info("Generating social marketing post for business={} platform={}", business.getBusinessName(), request.getPlatform());
+        AdGenerationResponse aiResponse = aiClientService.generateAdCopy(aiRequest);
+
+        SocialGenerateResponse response = new SocialGenerateResponse();
+        response.setPlatform(request.getPlatform());
+        response.setHeadline(aiResponse.getHeadline() != null && !aiResponse.getHeadline().isBlank() 
+                ? aiResponse.getHeadline() : "Quality Sri Lankan Products");
+        response.setCaption(aiResponse.getCaption() != null && !aiResponse.getCaption().isBlank() 
+                ? aiResponse.getCaption() : aiResponse.getGeneratedAds());
+        response.setCallToAction(aiResponse.getCallToAction() != null && !aiResponse.getCallToAction().isBlank() 
+                ? aiResponse.getCallToAction() : "Connect with us today!");
+        response.setHashtags(aiResponse.getHashtags() != null && !aiResponse.getHashtags().isEmpty() 
+                ? aiResponse.getHashtags() : List.of("#SriLankanBusiness", "#CeylonQuality", "#SME"));
+        response.setImagePrompt(aiResponse.getImagePrompt() != null && !aiResponse.getImagePrompt().isBlank() 
+                ? aiResponse.getImagePrompt() : "Commercial product photography of authentic Sri Lankan product with soft natural lighting");
+        response.setGeneratedAds(aiResponse.getGeneratedAds());
+
+        // Handle Image Generation & Cloudinary Upload
+        String rawImageUrl = null;
+        boolean isCloud = false;
+        if (generateImage) {
+            try {
+                log.info("Generating marketing visual with prompt: {}", response.getImagePrompt());
+                String visualPrompt = response.getImagePrompt() + " Clean commercial product photography; clear space; no text; no watermark.";
+                String imageBytesOrBase64 = adVisualService.generate(visualPrompt, "1024x1024");
+                if (imageBytesOrBase64 != null && !imageBytesOrBase64.isBlank()) {
+                    var cloudUrlOpt = cloudinaryStorageService.uploadImage(imageBytesOrBase64);
+                    if (cloudUrlOpt.isPresent()) {
+                        rawImageUrl = cloudUrlOpt.get();
+                        isCloud = true;
+                        log.info("Image stored on Cloudinary: {}", rawImageUrl);
+                    } else {
+                        rawImageUrl = imageBytesOrBase64;
+                        isCloud = imageBytesOrBase64.startsWith("https://");
+                        log.info("Image URL ready: {}", rawImageUrl);
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Visual generation failed or timed out: {}", ex.getMessage());
+                response.setMessage("AI post drafted successfully. Image generation timed out, but you can retry image creation anytime.");
+            }
+        }
+
+        response.setImageUrl(rawImageUrl);
+        response.setCloudImage(isCloud);
+
+        // Save SocialPost draft in database
+        try {
+            SocialPost post = new SocialPost();
+            post.setBusiness(business);
+            post.setPlatform(request.getPlatform().toUpperCase());
+            post.setHeadline(response.getHeadline());
+            post.setCaption(response.getCaption());
+            post.setCallToAction(response.getCallToAction());
+            post.setHashtags(String.join(" ", response.getHashtags()));
+            post.setImageUrl(rawImageUrl);
+            post.setImagePrompt(response.getImagePrompt());
+            post.setStatus("DRAFT");
+            SocialPost saved = socialPostRepository.save(post);
+            response.setId(saved.getId());
+            response.setStatus(saved.getStatus());
+        } catch (Exception ex) {
+            log.warn("Could not persist social post draft: {}", ex.getMessage());
+        }
+
+        return response;
+    }
+
+    public List<SocialPost> getPostHistory() {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return List.of();
+        }
+        return businessRepository.findByOwner_Id(userId).stream()
+                .findFirst()
+                .map(b -> socialPostRepository.findByBusiness_IdOrderByCreatedAtDesc(b.getId()))
+                .orElse(List.of());
+    }
+
+    public SocialPost getPostById(Long id) {
+        return socialPostRepository.findById(id).orElse(null);
+    }
+
+    public SocialPost saveOrUpdatePost(SocialPost post) {
+        return socialPostRepository.save(post);
     }
 }

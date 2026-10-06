@@ -84,4 +84,23 @@ public class HealthController {
         report.put("status", allHealthy ? "UP" : "DEGRADED");
         return ResponseEntity.ok(report);
     }
+
+    @GetMapping("/health/db")
+    public ResponseEntity<Map<String, Object>> databaseKeepAlive() {
+        Map<String, Object> report = new LinkedHashMap<>();
+        long start = System.currentTimeMillis();
+
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("SELECT 1");
+            report.put("status", "UP");
+            report.put("database", conn.getMetaData().getDatabaseProductName());
+            report.put("latencyMs", System.currentTimeMillis() - start);
+            return ResponseEntity.ok(report);
+        } catch (Exception ex) {
+            report.put("status", "DOWN");
+            report.put("error", ex.getMessage());
+            return ResponseEntity.status(503).body(report);
+        }
+    }
 }

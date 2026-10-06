@@ -1,28 +1,30 @@
-package com.backend.dto.ai;
+package com.backend.dto.social;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class AdGenerationResponse {
-
-    private String generatedAds;
+public class SocialGenerateResponse {
+    private Long id;
     private String platform;
     private String headline;
     private String caption;
     private String callToAction;
     private List<String> hashtags = new ArrayList<>();
     private String imagePrompt;
-    private boolean success = true;
-    private String error;
+    private String imageUrl;
+    private boolean cloudImage = false;
+    private String status = "DRAFT";
+    private String generatedAds;
+    private String message;
 
-    public AdGenerationResponse() {}
+    public SocialGenerateResponse() {}
 
-    public String getGeneratedAds() {
-        return generatedAds;
+    public Long getId() {
+        return id;
     }
 
-    public void setGeneratedAds(String generatedAds) {
-        this.generatedAds = generatedAds;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getPlatform() {
@@ -73,19 +75,43 @@ public class AdGenerationResponse {
         this.imagePrompt = imagePrompt;
     }
 
-    public boolean isSuccess() {
-        return success;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setSuccess(boolean success) {
-        this.success = success;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
-    public String getError() {
-        return error;
+    public boolean isCloudImage() {
+        return cloudImage;
     }
 
-    public void setError(String error) {
-        this.error = error;
+    public void setCloudImage(boolean cloudImage) {
+        this.cloudImage = cloudImage;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getGeneratedAds() {
+        return generatedAds;
+    }
+
+    public void setGeneratedAds(String generatedAds) {
+        this.generatedAds = generatedAds;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }
